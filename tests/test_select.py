@@ -1,0 +1,215 @@
+"""Tests for Arcam FMJ select entities."""
+
+from collections.abc import Generator
+from unittest.mock import Mock, patch
+
+from arcam.fmj.codecs import (
+    AutoShutdown,
+    CompressionMode,
+    DisplayBrightness,
+    DolbyAudioMode,
+    HdmiOutput,
+    ImaxEnhancedMode,
+    VideoFilmMode,
+    VideoNoiseReduction,
+    VideoSelection,
+)
+from arcam.fmj.commands import (
+    AUTO_SHUTDOWN_CONTROL,
+    COMPRESSION,
+    DISPLAY_BRIGHTNESS,
+    DOLBY_AUDIO,
+    IMAX_ENHANCED,
+    VIDEO_FILM_MODE,
+    VIDEO_MPEG_NOISE_REDUCTION,
+    VIDEO_NOISE_REDUCTION,
+    VIDEO_OUTPUT_SWITCHING,
+    VIDEO_SELECTION,
+    ReadWriteCommand,
+)
+from arcam.fmj.models import IntOrTypeEnum
+from arcam.fmj.state import State
+import pytest
+from syrupy.assertion import SnapshotAssertion
+
+from homeassistant.components.select import (
+    ATTR_OPTION,
+    DOMAIN as SELECT_DOMAIN,
+    SERVICE_SELECT_OPTION,
+)
+from homeassistant.const import ATTR_ENTITY_ID, Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    snapshot_platform,
+)
+
+ENTITY_IDS = {
+    DISPLAY_BRIGHTNESS: "select.arcam_fmj_127_0_0_1_front_panel_display_brightness",
+    VIDEO_SELECTION: "select.arcam_fmj_127_0_0_1_legacy_video_selection",
+    IMAX_ENHANCED: "select.arcam_fmj_127_0_0_1_imax_enhanced_mode",
+    DOLBY_AUDIO: "select.arcam_fmj_127_0_0_1_dolby_audio_mode",
+    COMPRESSION: "select.arcam_fmj_127_0_0_1_dynamic_range_compression",
+    VIDEO_FILM_MODE: "select.arcam_fmj_127_0_0_1_video_film_mode",
+    VIDEO_NOISE_REDUCTION: "select.arcam_fmj_127_0_0_1_video_noise_reduction",
+    VIDEO_MPEG_NOISE_REDUCTION: "select.arcam_fmj_127_0_0_1_mpeg_noise_reduction",
+    VIDEO_OUTPUT_SWITCHING: "select.arcam_fmj_127_0_0_1_hdmi_output",
+    AUTO_SHUTDOWN_CONTROL: "select.arcam_fmj_127_0_0_1_auto_shutdown_interval",
+}
+
+AVR450_COMMANDS = {
+    DISPLAY_BRIGHTNESS,
+    VIDEO_SELECTION,
+    DOLBY_AUDIO,
+    COMPRESSION,
+    VIDEO_FILM_MODE,
+    VIDEO_NOISE_REDUCTION,
+    VIDEO_MPEG_NOISE_REDUCTION,
+    VIDEO_OUTPUT_SWITCHING,
+}
+AVR20_COMMANDS = {
+    DISPLAY_BRIGHTNESS,
+    IMAX_ENHANCED,
+    DOLBY_AUDIO,
+    COMPRESSION,
+    VIDEO_OUTPUT_SWITCHING,
+}
+SA20_COMMANDS = {DISPLAY_BRIGHTNESS, AUTO_SHUTDOWN_CONTROL}
+
+
+@pytest.fixture(autouse=True)
+def select_only() -> Generator[None]:
+    """Limit platform setup to select only."""
+    with patch("custom_components.arcam_fmj.PLATFORMS", [Platform.SELECT]):
+        yield
+
+
+@pytest.mark.parametrize("device_model", ["AVR450", "AVR20", "SA20"], indirect=True)
+@pytest.mark.usefixtures("entity_registry_enabled_by_default", "player_setup")
+async def test_setup(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    snapshot: SnapshotAssertion,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test snapshots of the select platform."""
+    await snapshot_platform(hass, entity_registry, snapshot, mock_config_entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    ("device_model", "command", "value"),
+    [
+        ("AVR450", DISPLAY_BRIGHTNESS, DisplayBrightness.L2),
+        ("AVR450", VIDEO_SELECTION, VideoSelection.PVR),
+        ("AVR20", IMAX_ENHANCED, ImaxEnhancedMode.AUTO),
+        ("AVR20", DOLBY_AUDIO, DolbyAudioMode.NIGHT),
+        ("AVR450", COMPRESSION, CompressionMode.HIGH),
+        ("AVR450", VIDEO_FILM_MODE, VideoFilmMode.OFF),
+        ("AVR450", VIDEO_NOISE_REDUCTION, VideoNoiseReduction.LOW),
+        ("AVR450", VIDEO_MPEG_NOISE_REDUCTION, VideoNoiseReduction.MEDIUM),
+        ("AVR450", VIDEO_OUTPUT_SWITCHING, HdmiOutput.OUT_1_2),
+        ("SA20", AUTO_SHUTDOWN_CONTROL, AutoShutdown.HOURS_2),
+    ],
+    indirect=["device_model"],
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_read_and_write(
+    hass: HomeAssistant,
+    state_1: State,
+    client: Mock,
+    command: ReadWriteCommand[IntOrTypeEnum],
+    value: IntOrTypeEnum,
+) -> None:
+    """Test reading and writing direct selects."""
+    state_1.command_values[command] = value
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    entity_id = ENTITY_IDS[command]
+    entity_state = hass.states.get(entity_id)
+    assert entity_state is not None
+    assert entity_state.state == value.name.lower()
+
+    await hass.services.async_call(
+        SELECT_DOMAIN,
+        SERVICE_SELECT_OPTION,
+        {ATTR_ENTITY_ID: entity_id, ATTR_OPTION: value.name.lower()},
+        blocking=True,
+    )
+
+    state_1.set.assert_awaited_once_with(command, value)
+
+
+@pytest.mark.parametrize(
+    ("device_model", "expected_commands"),
+    [
+        ("AVR450", AVR450_COMMANDS),
+        ("AVR20", AVR20_COMMANDS),
+        ("SA20", SA20_COMMANDS),
+    ],
+    indirect=["device_model"],
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_model_support(
+    hass: HomeAssistant,
+    expected_commands: set[ReadWriteCommand[IntOrTypeEnum]],
+) -> None:
+    """Test selects are created only for supported models."""
+    for command, entity_id in ENTITY_IDS.items():
+        assert (hass.states.get(entity_id) is not None) == (
+            command in expected_commands
+        )
+
+
+@pytest.mark.parametrize(
+    ("device_model", "command", "expected_options"),
+    [
+        ("AVR450", DOLBY_AUDIO, ["off", "movie"]),
+        ("AVR20", DOLBY_AUDIO, ["off", "movie", "music", "night"]),
+        (
+            "SA20",
+            AUTO_SHUTDOWN_CONTROL,
+            ["disabled", "minutes_30", "hour_1", "hours_2", "hours_4"],
+        ),
+        (
+            "SA30",
+            AUTO_SHUTDOWN_CONTROL,
+            [
+                "disabled",
+                "minutes_20",
+                "minutes_30",
+                "hour_1",
+                "hours_2",
+                "hours_4",
+            ],
+        ),
+    ],
+    indirect=["device_model"],
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_model_options(
+    hass: HomeAssistant,
+    command: ReadWriteCommand[IntOrTypeEnum],
+    expected_options: list[str],
+) -> None:
+    """Test select options are filtered for the model."""
+    entity_state = hass.states.get(ENTITY_IDS[command])
+    assert entity_state is not None
+    assert entity_state.attributes["options"] == expected_options
+
+
+@pytest.mark.parametrize("device_model", ["AVR20"], indirect=True)
+@pytest.mark.usefixtures("entity_registry_enabled_by_default", "player_setup")
+async def test_zone_support(hass: HomeAssistant) -> None:
+    """Test selects are created only in supported zones."""
+    entity_ids = {state.entity_id for state in hass.states.async_all(SELECT_DOMAIN)}
+    assert "select.arcam_fmj_127_0_0_1_zone_2_dolby_audio_mode" in entity_ids
+    assert "select.arcam_fmj_127_0_0_1_zone_2_dynamic_range_compression" in entity_ids
+    assert not any(
+        entity_id.startswith(
+            "select.arcam_fmj_127_0_0_1_zone_2_front_panel_display_brightness"
+        )
+        for entity_id in entity_ids
+    )

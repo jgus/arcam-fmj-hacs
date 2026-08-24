@@ -34,6 +34,24 @@ def enum_options(value: type[IntOrTypeEnum]) -> list[str]:
     ]
 
 
+def enum_options_for_model(
+    value: type[IntOrTypeEnum], model: str | None
+) -> dict[str, IntOrTypeEnum]:
+    """Return writable Home Assistant options supported by a model."""
+    options: dict[str, IntOrTypeEnum] = {}
+    for member in value:
+        if member.name.startswith("CODE_") or (
+            member.version is not None and model not in member.version
+        ):
+            continue
+        try:
+            member.to_bytes_for_model(model)
+        except ValueError:
+            continue
+        options[member.name.lower()] = member
+    return options
+
+
 def enum_value(value: IntOrTypeEnum | None) -> str | None:
     """Convert a protocol enum value to a Home Assistant state."""
     if value is None:

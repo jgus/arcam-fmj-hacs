@@ -57,6 +57,97 @@
         "name": "Short-circuit fault"
       }
     },
+    "select": {
+      "auto_shutdown_control": {
+        "name": "Auto-shutdown interval",
+        "state": {
+          "disabled": "Disabled",
+          "hour_1": "1 hour",
+          "hours_2": "2 hours",
+          "hours_4": "4 hours",
+          "minutes_20": "20 minutes",
+          "minutes_30": "30 minutes"
+        }
+      },
+      "compression": {
+        "name": "Dynamic-range compression",
+        "state": {
+          "high": "High",
+          "medium": "Medium",
+          "off": "Off"
+        }
+      },
+      "display_brightness": {
+        "name": "Front-panel display brightness",
+        "state": {
+          "l1": "Level 1",
+          "l2": "Level 2",
+          "off": "Off"
+        }
+      },
+      "dolby_audio": {
+        "name": "Dolby Audio mode",
+        "state": {
+          "movie": "Movie",
+          "music": "Music",
+          "night": "Night",
+          "off": "Off"
+        }
+      },
+      "imax_enhanced": {
+        "name": "IMAX Enhanced mode",
+        "state": {
+          "auto": "Auto",
+          "off": "Off",
+          "on": "On"
+        }
+      },
+      "video_film_mode": {
+        "name": "Video film mode",
+        "state": {
+          "auto": "Auto",
+          "off": "Off"
+        }
+      },
+      "video_mpeg_noise_reduction": {
+        "name": "MPEG noise reduction",
+        "state": {
+          "high": "High",
+          "low": "Low",
+          "medium": "Medium",
+          "off": "Off"
+        }
+      },
+      "video_noise_reduction": {
+        "name": "Video noise reduction",
+        "state": {
+          "high": "High",
+          "low": "Low",
+          "medium": "Medium",
+          "off": "Off"
+        }
+      },
+      "video_output_switching": {
+        "name": "HDMI output",
+        "state": {
+          "out_1": "Output 1",
+          "out_1_2": "Outputs 1 and 2",
+          "out_2": "Output 2"
+        }
+      },
+      "video_selection": {
+        "name": "Legacy video selection",
+        "state": {
+          "av": "AV",
+          "bd": "Blu-ray",
+          "game": "Game",
+          "pvr": "PVR",
+          "sat": "Satellite",
+          "stb": "Set-top box",
+          "vcr": "VCR"
+        }
+      }
+    },
     "sensor": {
       "fm_genre": {
         "name": "FM genre"

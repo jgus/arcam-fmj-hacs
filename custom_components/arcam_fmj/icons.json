@@ -17,6 +17,38 @@
         "default": "mdi:flash-alert"
       }
     },
+    "select": {
+      "auto_shutdown_control": {
+        "default": "mdi:timer-off-outline"
+      },
+      "compression": {
+        "default": "mdi:waveform"
+      },
+      "display_brightness": {
+        "default": "mdi:brightness-6"
+      },
+      "dolby_audio": {
+        "default": "mdi:dolby"
+      },
+      "imax_enhanced": {
+        "default": "mdi:movie-open-play"
+      },
+      "video_film_mode": {
+        "default": "mdi:filmstrip"
+      },
+      "video_mpeg_noise_reduction": {
+        "default": "mdi:image-filter-center-focus"
+      },
+      "video_noise_reduction": {
+        "default": "mdi:image-filter-center-focus-weak"
+      },
+      "video_output_switching": {
+        "default": "mdi:video-output"
+      },
+      "video_selection": {
+        "default": "mdi:video-switch"
+      }
+    },
     "sensor": {
       "fm_genre": {
         "default": "mdi:radio-fm"
