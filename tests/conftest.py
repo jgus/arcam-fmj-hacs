@@ -122,6 +122,7 @@ def _mock_state(client: Mock, zone: int, model: str | None) -> State:
     state.get_decode_modes.return_value = []
     state.get_decode_mode.return_value = None
     state.get_lifter_temperature.return_value = 0
+    state.get_output_temperature.return_value = 0
     state.is_command_supported.side_effect = lambda command: (
         command.version is None or model in command.version
     )

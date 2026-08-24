@@ -417,6 +417,9 @@
       },
       "output_temperature": {
         "name": "Output-stage temperature 1"
+      },
+      "output_temperature_2": {
+        "name": "Output-stage temperature 2"
       }
     },
     "switch": {

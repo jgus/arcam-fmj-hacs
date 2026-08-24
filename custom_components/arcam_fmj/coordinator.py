@@ -10,6 +10,7 @@ from arcam.fmj.client import Client
 from arcam.fmj.codecs import TemperatureSensor
 from arcam.fmj.commands import (
     LIFTER_TEMPERATURE,
+    OUTPUT_TEMPERATURE,
     SOFTWARE_VERSION,
     SYSTEM_MODEL,
     Command,
@@ -167,6 +168,15 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
             ):
                 await self._async_poll_temperature_sensor_2(
                     LIFTER_TEMPERATURE, self.state.get_lifter_temperature
+                )
+            if (
+                self.state.zn == 1
+                and TemperatureSensor.SENSOR_2
+                in OUTPUT_TEMPERATURE.supported_sensors(self.state.model)
+                and self.state.is_command_supported(OUTPUT_TEMPERATURE)
+            ):
+                await self._async_poll_temperature_sensor_2(
+                    OUTPUT_TEMPERATURE, self.state.get_output_temperature
                 )
         except (ConnectionFailed, NotConnectedException) as err:
             raise UpdateFailed(

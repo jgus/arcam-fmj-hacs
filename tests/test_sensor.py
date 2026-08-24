@@ -258,3 +258,36 @@ async def test_sensor_model_support(hass: HomeAssistant) -> None:
         )
         is None
     )
+
+
+@pytest.mark.parametrize("device_model", ["PA410"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_output_temperature_sensor_2(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    state_1: State,
+) -> None:
+    """Test coordinator polling for the second output temperature sensor."""
+    state_1.get_output_temperature.reset_mock()
+    state_1.get_output_temperature.return_value = 52
+
+    coordinator = mock_config_entry.runtime_data.coordinators[1]
+    await coordinator.async_refresh()
+
+    state_1.get_output_temperature.assert_awaited_once_with(TemperatureSensor.SENSOR_2)
+    state = hass.states.get("sensor.arcam_fmj_127_0_0_1_output_stage_temperature_2")
+    assert state is not None
+    assert state.state == "52"
+    assert state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
+    assert hass.states.get("sensor.arcam_fmj_127_0_0_1_lifter_temperature_2") is None
+
+
+@pytest.mark.parametrize("device_model", ["SA30"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_output_temperature_sensor_2_model_support(
+    hass: HomeAssistant,
+) -> None:
+    """Test the second output sensor is limited to multi-sensor models."""
+    assert (
+        hass.states.get("sensor.arcam_fmj_127_0_0_1_output_stage_temperature_2") is None
+    )

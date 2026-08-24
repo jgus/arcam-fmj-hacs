@@ -212,6 +212,20 @@ LIFTER_TEMPERATURE_2_DESCRIPTION = ArcamFmjSensorEntityDescription(
     ),
 )
 
+OUTPUT_TEMPERATURE_2_DESCRIPTION = ArcamFmjSensorEntityDescription(
+    key="output_temperature_2",
+    command=OUTPUT_TEMPERATURE,
+    translation_key="output_temperature_2",
+    device_class=SensorDeviceClass.TEMPERATURE,
+    entity_category=EntityCategory.DIAGNOSTIC,
+    state_class=SensorStateClass.MEASUREMENT,
+    native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    suggested_display_precision=0,
+    value_fn=lambda coordinator: coordinator.temperature_sensor_2_value(
+        OUTPUT_TEMPERATURE
+    ),
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -234,6 +248,14 @@ async def async_setup_entry(
         ):
             entities.append(
                 ArcamFmjSensorEntity(coordinator, LIFTER_TEMPERATURE_2_DESCRIPTION)
+            )
+        if coordinator.supports_command(
+            OUTPUT_TEMPERATURE
+        ) and TemperatureSensor.SENSOR_2 in OUTPUT_TEMPERATURE.supported_sensors(
+            coordinator.model
+        ):
+            entities.append(
+                ArcamFmjSensorEntity(coordinator, OUTPUT_TEMPERATURE_2_DESCRIPTION)
             )
     async_add_entities(entities)
 

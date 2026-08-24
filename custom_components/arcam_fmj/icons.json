@@ -164,6 +164,9 @@
       },
       "output_temperature": {
         "default": "mdi:thermometer"
+      },
+      "output_temperature_2": {
+        "default": "mdi:thermometer"
       }
     },
     "switch": {
