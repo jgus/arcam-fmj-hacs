@@ -78,6 +78,11 @@
         "default": "mdi:image-filter-center-focus-strong"
       }
     },
+    "remote": {
+      "remote": {
+        "default": "mdi:remote"
+      }
+    },
     "select": {
       "auto_shutdown_control": {
         "default": "mdi:timer-off-outline"

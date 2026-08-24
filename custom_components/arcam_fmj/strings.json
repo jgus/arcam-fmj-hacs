@@ -118,6 +118,11 @@
         "name": "Legacy video edge enhancement"
       }
     },
+    "remote": {
+      "remote": {
+        "name": "Remote"
+      }
+    },
     "select": {
       "auto_shutdown_control": {
         "name": "Auto-shutdown interval",
@@ -445,6 +450,9 @@
   "exceptions": {
     "connection_failed": {
       "message": "Connection failed to the device."
+    },
+    "unsupported_remote_command": {
+      "message": "Unsupported remote command: {command}."
     },
     "room_eq_state_read_only": {
       "message": "Room EQ state {state} is read-only."
