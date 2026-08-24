@@ -16,7 +16,9 @@ from arcam.fmj.commands import (
     INCOMING_AUDIO_SAMPLE_RATE,
     INCOMING_AUDIO_FORMAT,
     INCOMING_VIDEO_PARAMETERS,
+    LIFTER_TEMPERATURE,
     MENU,
+    OUTPUT_TEMPERATURE,
 )
 from arcam.fmj.state import State
 
@@ -26,7 +28,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory, UnitOfFrequency
+from homeassistant.const import EntityCategory, UnitOfFrequency, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -66,6 +68,28 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.ENUM,
         options=enum_options(MenuCodes),
         value_fn=lambda state: enum_value(state.get(MENU)),
+    ),
+    ArcamFmjSensorEntityDescription(
+        key="lifter_temperature",
+        command=LIFTER_TEMPERATURE,
+        translation_key="lifter_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        suggested_display_precision=0,
+        value_fn=lambda state: state.get(LIFTER_TEMPERATURE),
+    ),
+    ArcamFmjSensorEntityDescription(
+        key="output_temperature",
+        command=OUTPUT_TEMPERATURE,
+        translation_key="output_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        suggested_display_precision=0,
+        value_fn=lambda state: state.get(OUTPUT_TEMPERATURE),
     ),
     ArcamFmjSensorEntityDescription(
         key="incoming_video_horizontal_resolution",

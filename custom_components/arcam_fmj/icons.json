@@ -45,8 +45,14 @@
       "incoming_video_vertical_resolution": {
         "default": "mdi:arrow-expand-vertical"
       },
+      "lifter_temperature": {
+        "default": "mdi:thermometer-lines"
+      },
       "menu": {
         "default": "mdi:menu"
+      },
+      "output_temperature": {
+        "default": "mdi:thermometer"
       }
     }
   }

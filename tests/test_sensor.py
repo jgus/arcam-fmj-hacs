@@ -15,13 +15,15 @@ from arcam.fmj.commands import (
     FM_GENRE,
     INCOMING_AUDIO_SAMPLE_RATE,
     INCOMING_VIDEO_PARAMETERS,
+    LIFTER_TEMPERATURE,
     MENU,
+    OUTPUT_TEMPERATURE,
 )
 from arcam.fmj.state import State
 import pytest
 from syrupy.assertion import SnapshotAssertion
 
-from homeassistant.const import Platform
+from homeassistant.const import Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -179,6 +181,36 @@ async def test_sensor_zone_support(hass: HomeAssistant) -> None:
     """Test command zone metadata filters sensor creation."""
     assert hass.states.get("sensor.arcam_fmj_127_0_0_1_zone_2_fm_genre") is not None
     assert hass.states.get("sensor.arcam_fmj_127_0_0_1_zone_2_menu") is None
+
+
+@pytest.mark.parametrize("device_model", ["SA30"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_temperature_sensors(
+    hass: HomeAssistant,
+    state_1: State,
+    client: Mock,
+) -> None:
+    """Test amplifier temperature sensors."""
+    state_1.command_values[LIFTER_TEMPERATURE] = 42
+    state_1.command_values[OUTPUT_TEMPERATURE] = 51
+
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    expected = {
+        "lifter_temperature_1": "42",
+        "output_stage_temperature_1": "51",
+    }
+    for key, value in expected.items():
+        state = hass.states.get(f"sensor.arcam_fmj_127_0_0_1_{key}")
+        assert state is not None
+        assert state.state == value
+        assert state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
+
+    assert (
+        hass.states.get("sensor.arcam_fmj_127_0_0_1_zone_2_lifter_temperature_1")
+        is None
+    )
 
 
 @pytest.mark.parametrize("device_model", ["SA30"], indirect=True)

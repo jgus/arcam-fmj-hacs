@@ -168,6 +168,9 @@
       "incoming_video_vertical_resolution": {
         "name": "Incoming video vertical resolution"
       },
+      "lifter_temperature": {
+        "name": "Lifter temperature 1"
+      },
       "menu": {
         "name": "Menu",
         "state": {
@@ -182,6 +185,9 @@
           "tuner": "Tuner",
           "usb": "USB"
         }
+      },
+      "output_temperature": {
+        "name": "Output-stage temperature 1"
       }
     }
   },
