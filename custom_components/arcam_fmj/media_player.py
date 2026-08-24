@@ -3,7 +3,12 @@
 import logging
 from typing import Any, override
 
-from arcam.fmj.codecs import NetworkPlaybackStatus, NowPlayingInfo, SourceCodes
+from arcam.fmj.codecs import (
+    BluetoothAudioStatus,
+    NetworkPlaybackStatus,
+    NowPlayingInfo,
+    SourceCodes,
+)
 from arcam.fmj.commands import (
     CURRENT_SOURCE,
     DAB_STATION,
@@ -37,16 +42,35 @@ from .entity import ArcamFmjEntity, convert_exception
 
 _LOGGER = logging.getLogger(__name__)
 
+ATTR_MEDIA_CODEC = "media_codec"
 ATTR_MEDIA_ENCODER = "media_encoder"
 ATTR_MEDIA_SAMPLE_RATE = "media_sample_rate"
 
 _NETWORK_SOURCES = frozenset({SourceCodes.NET, SourceCodes.USB, SourceCodes.NET_USB})
-_MUSIC_SOURCES = _NETWORK_SOURCES | {SourceCodes.DAB, SourceCodes.FM}
+_MUSIC_SOURCES = _NETWORK_SOURCES | {
+    SourceCodes.BT,
+    SourceCodes.DAB,
+    SourceCodes.FM,
+}
 _NETWORK_STATES = {
     NetworkPlaybackStatus.STOPPED: MediaPlayerState.IDLE,
     NetworkPlaybackStatus.TRANSITIONING: MediaPlayerState.BUFFERING,
     NetworkPlaybackStatus.PLAYING: MediaPlayerState.PLAYING,
     NetworkPlaybackStatus.PAUSED: MediaPlayerState.PAUSED,
+}
+_BLUETOOTH_STATES = {
+    BluetoothAudioStatus.NO_CONNECTION: MediaPlayerState.IDLE,
+    BluetoothAudioStatus.PAUSED: MediaPlayerState.PAUSED,
+    BluetoothAudioStatus.PLAYING_SBC: MediaPlayerState.PLAYING,
+    BluetoothAudioStatus.PLAYING_AAC: MediaPlayerState.PLAYING,
+    BluetoothAudioStatus.PLAYING_APTX: MediaPlayerState.PLAYING,
+    BluetoothAudioStatus.PLAYING_APTX_HD: MediaPlayerState.PLAYING,
+}
+_BLUETOOTH_CODECS = {
+    BluetoothAudioStatus.PLAYING_SBC: "SBC",
+    BluetoothAudioStatus.PLAYING_AAC: "AAC",
+    BluetoothAudioStatus.PLAYING_APTX: "aptX",
+    BluetoothAudioStatus.PLAYING_APTX_HD: "aptX HD",
 }
 
 # arcam-fmj serializes commands on a single TCP writer at the library
@@ -122,10 +146,14 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
             return None
         if not power:
             return MediaPlayerState.OFF
-        if self._state.get_source() in _NETWORK_SOURCES:
+        source = self._state.get_source()
+        if source in _NETWORK_SOURCES:
             return _NETWORK_STATES.get(
                 self._state.get(NETWORK_PLAYBACK_STATUS), MediaPlayerState.ON
             )
+        if source is SourceCodes.BT:
+            status, _ = self._state.get_bluetooth_status()
+            return _BLUETOOTH_STATES.get(status, MediaPlayerState.ON)
         return MediaPlayerState.ON
 
     @convert_exception
@@ -377,7 +405,13 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         if (source := self._state.get_source()) is None:
             return None
 
-        if (
+        if source is SourceCodes.BT:
+            _, track = self._state.get_bluetooth_status()
+            if track is not None:
+                value = track
+            else:
+                value = source.name
+        elif (
             now_playing := self._network_now_playing()
         ) is not None and now_playing.track is not None:
             value = now_playing.track
@@ -390,7 +424,13 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
     @property
     @override
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return network playback details."""
+        """Return playback details."""
+        if self._state.get_source() is SourceCodes.BT:
+            status, _ = self._state.get_bluetooth_status()
+            if (codec := _BLUETOOTH_CODECS.get(status)) is None:
+                return None
+            return {ATTR_MEDIA_CODEC: codec}
+
         if (now_playing := self._network_now_playing()) is None:
             return None
 

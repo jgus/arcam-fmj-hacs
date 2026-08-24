@@ -5,6 +5,7 @@ from math import isclose
 from unittest.mock import Mock, PropertyMock, patch
 
 from arcam.fmj.codecs import (
+    BluetoothAudioStatus,
     DecodeMode2CH,
     DecodeModeMCH,
     NetworkPlaybackStatus,
@@ -28,6 +29,7 @@ import pytest
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.arcam_fmj.media_player import (
+    ATTR_MEDIA_CODEC,
     ATTR_MEDIA_ENCODER,
     ATTR_MEDIA_SAMPLE_RATE,
     ArcamFmj,
@@ -223,6 +225,54 @@ async def test_network_playback_state_is_source_gated(
     state_1.get_source.return_value = SourceCodes.PVR
     state_1.command_values[NETWORK_PLAYBACK_STATUS] = NetworkPlaybackStatus.PLAYING
 
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.state == "on"
+
+
+@pytest.mark.parametrize(
+    ("playback_status", "expected_state"),
+    [
+        (BluetoothAudioStatus.NO_CONNECTION, "idle"),
+        (BluetoothAudioStatus.PAUSED, "paused"),
+        (BluetoothAudioStatus.PLAYING_SBC, "playing"),
+        (BluetoothAudioStatus.PLAYING_AAC, "playing"),
+        (BluetoothAudioStatus.PLAYING_APTX, "playing"),
+        (BluetoothAudioStatus.PLAYING_APTX_HD, "playing"),
+        (None, "on"),
+    ],
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_bluetooth_playback_state(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+    playback_status: BluetoothAudioStatus | None,
+    expected_state: str,
+) -> None:
+    """Test Bluetooth playback state mapping."""
+    state_1.get_source.return_value = SourceCodes.BT
+    state_1.get_bluetooth_status.return_value = playback_status, "Track"
+
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.state == expected_state
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_bluetooth_playback_state_is_source_gated(
+    hass: HomeAssistant, client: Mock, state_1: State
+) -> None:
+    """Test stale Bluetooth playback state is hidden on other sources."""
+    state_1.get_source.return_value = SourceCodes.BT
+    state_1.get_bluetooth_status.return_value = (
+        BluetoothAudioStatus.PLAYING_AAC,
+        "Track",
+    )
+    bluetooth_data = await update(hass, client, MOCK_ENTITY_ID)
+    assert bluetooth_data.state == "playing"
+
+    state_1.get_source.return_value = SourceCodes.PVR
     data = await update(hass, client, MOCK_ENTITY_ID)
 
     assert data.state == "on"
@@ -630,6 +680,7 @@ async def test_set_volume_level_lost(
         (SourceCodes.NET, MediaType.MUSIC),
         (SourceCodes.USB, MediaType.MUSIC),
         (SourceCodes.NET_USB, MediaType.MUSIC),
+        (SourceCodes.BT, MediaType.MUSIC),
         (SourceCodes.PVR, None),
         (None, None),
     ],
@@ -787,3 +838,63 @@ async def test_network_now_playing_metadata_is_source_gated(
     assert ATTR_APP_NAME not in data.attributes
     assert ATTR_MEDIA_ENCODER not in data.attributes
     assert ATTR_MEDIA_SAMPLE_RATE not in data.attributes
+
+
+@pytest.mark.parametrize(
+    ("playback_status", "codec"),
+    [
+        (BluetoothAudioStatus.PLAYING_SBC, "SBC"),
+        (BluetoothAudioStatus.PLAYING_AAC, "AAC"),
+        (BluetoothAudioStatus.PLAYING_APTX, "aptX"),
+        (BluetoothAudioStatus.PLAYING_APTX_HD, "aptX HD"),
+        (BluetoothAudioStatus.PAUSED, None),
+        (BluetoothAudioStatus.NO_CONNECTION, None),
+    ],
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_bluetooth_metadata(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+    playback_status: BluetoothAudioStatus,
+    codec: str | None,
+) -> None:
+    """Test Bluetooth track and codec metadata."""
+    state_1.get_source.return_value = SourceCodes.BT
+    state_1.get_bluetooth_status.return_value = playback_status, "The Chain"
+
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.attributes[ATTR_MEDIA_TITLE] == "The Chain"
+    if codec is None:
+        assert ATTR_MEDIA_CODEC not in data.attributes
+    else:
+        assert data.attributes[ATTR_MEDIA_CODEC] == codec
+    assert ATTR_MEDIA_ARTIST not in data.attributes
+    assert ATTR_MEDIA_ALBUM_NAME not in data.attributes
+    assert ATTR_APP_NAME not in data.attributes
+    assert ATTR_MEDIA_ENCODER not in data.attributes
+    assert ATTR_MEDIA_SAMPLE_RATE not in data.attributes
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_bluetooth_metadata_is_source_gated(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+) -> None:
+    """Test stale Bluetooth metadata is hidden on other sources."""
+    state_1.get_source.return_value = SourceCodes.BT
+    state_1.get_bluetooth_status.return_value = (
+        BluetoothAudioStatus.PLAYING_APTX_HD,
+        "The Chain",
+    )
+    bluetooth_data = await update(hass, client, MOCK_ENTITY_ID)
+    assert bluetooth_data.attributes[ATTR_MEDIA_TITLE] == "The Chain"
+    assert bluetooth_data.attributes[ATTR_MEDIA_CODEC] == "aptX HD"
+
+    state_1.get_source.return_value = SourceCodes.PVR
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.attributes[ATTR_MEDIA_TITLE] == "PVR"
+    assert ATTR_MEDIA_CODEC not in data.attributes

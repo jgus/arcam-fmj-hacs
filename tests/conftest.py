@@ -118,6 +118,7 @@ def _mock_state(client: Mock, zone: int, model: str | None) -> State:
     state.get.side_effect = state.command_values.get
     state.get_source.return_value = None
     state.get_source_list.return_value = []
+    state.get_bluetooth_status.return_value = (None, None)
     state.get_incoming_audio_format.return_value = (None, None)
     state.get_now_playing.return_value = None
     state.get_decode_modes.return_value = []
