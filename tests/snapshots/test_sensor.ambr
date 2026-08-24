@@ -1,4 +1,54 @@
 # serializer version: 1
+# name: test_setup[sensor.arcam_fmj_127_0_0_1_fm_genre-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.arcam_fmj_127_0_0_1_fm_genre',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'FM genre',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'FM genre',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'fm_genre',
+    'unique_id': '456789abcdef-1-fm_genre',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[sensor.arcam_fmj_127_0_0_1_fm_genre-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) FM genre',
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.arcam_fmj_127_0_0_1_fm_genre',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_setup[sensor.arcam_fmj_127_0_0_1_incoming_audio_configuration-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -597,6 +647,132 @@
     }),
     'context': <ANY>,
     'entity_id': 'sensor.arcam_fmj_127_0_0_1_incoming_video_vertical_resolution',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_setup[sensor.arcam_fmj_127_0_0_1_menu-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SensorEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'none',
+        'setup',
+        'trim',
+        'bass',
+        'treble',
+        'sync',
+        'sub',
+        'tuner',
+        'network',
+        'usb',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.arcam_fmj_127_0_0_1_menu',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Menu',
+    'options': dict({
+    }),
+    'original_device_class': <SensorDeviceClass.ENUM: 'enum'>,
+    'original_icon': None,
+    'original_name': 'Menu',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'menu',
+    'unique_id': '456789abcdef-1-menu',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[sensor.arcam_fmj_127_0_0_1_menu-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'enum',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Menu',
+      <SensorEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'none',
+        'setup',
+        'trim',
+        'bass',
+        'treble',
+        'sync',
+        'sub',
+        'tuner',
+        'network',
+        'usb',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.arcam_fmj_127_0_0_1_menu',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_setup[sensor.arcam_fmj_127_0_0_1_zone_2_fm_genre-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'sensor',
+    'entity_category': None,
+    'entity_id': 'sensor.arcam_fmj_127_0_0_1_zone_2_fm_genre',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'FM genre',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'FM genre',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'fm_genre',
+    'unique_id': '456789abcdef-2-fm_genre',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[sensor.arcam_fmj_127_0_0_1_zone_2_fm_genre-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Zone 2 FM genre',
+    }),
+    'context': <ANY>,
+    'entity_id': 'sensor.arcam_fmj_127_0_0_1_zone_2_fm_genre',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

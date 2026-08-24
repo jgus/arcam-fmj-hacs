@@ -6,6 +6,9 @@
       }
     },
     "sensor": {
+      "fm_genre": {
+        "default": "mdi:radio-fm"
+      },
       "incoming_audio_config": {
         "default": "mdi:surround-sound"
       },
@@ -29,6 +32,9 @@
       },
       "incoming_video_vertical_resolution": {
         "default": "mdi:arrow-expand-vertical"
+      },
+      "menu": {
+        "default": "mdi:menu"
       }
     }
   }

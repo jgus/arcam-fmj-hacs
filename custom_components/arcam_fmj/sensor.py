@@ -9,11 +9,14 @@ from arcam.fmj.codecs import (
     IncomingAudioFormat,
     IncomingVideoAspectRatio,
     IncomingVideoColorspace,
+    MenuCodes,
 )
 from arcam.fmj.commands import (
+    FM_GENRE,
     INCOMING_AUDIO_SAMPLE_RATE,
     INCOMING_AUDIO_FORMAT,
     INCOMING_VIDEO_PARAMETERS,
+    MENU,
 )
 from arcam.fmj.state import State
 
@@ -50,6 +53,20 @@ class ArcamFmjSensorEntityDescription(
 
 
 SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
+    ArcamFmjSensorEntityDescription(
+        key="fm_genre",
+        command=FM_GENRE,
+        translation_key="fm_genre",
+        value_fn=lambda state: state.get(FM_GENRE),
+    ),
+    ArcamFmjSensorEntityDescription(
+        key="menu",
+        command=MENU,
+        translation_key="menu",
+        device_class=SensorDeviceClass.ENUM,
+        options=enum_options(MenuCodes),
+        value_fn=lambda state: enum_value(state.get(MENU)),
+    ),
     ArcamFmjSensorEntityDescription(
         key="incoming_video_horizontal_resolution",
         command=INCOMING_VIDEO_PARAMETERS,

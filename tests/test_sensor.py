@@ -8,10 +8,14 @@ from arcam.fmj.codecs import (
     IncomingAudioFormat,
     IncomingVideoAspectRatio,
     IncomingVideoColorspace,
+    MenuCodes,
+    SourceCodes,
 )
 from arcam.fmj.commands import (
+    FM_GENRE,
     INCOMING_AUDIO_SAMPLE_RATE,
     INCOMING_VIDEO_PARAMETERS,
+    MENU,
 )
 from arcam.fmj.state import State
 import pytest
@@ -138,6 +142,43 @@ async def test_sensor_enum_unknown(
     assert _get("incoming_audio_configuration") == "unknown"
     assert _get("incoming_video_aspect_ratio") == "unknown"
     assert _get("incoming_video_colorspace") == "unknown"
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_fm_genre_and_menu(
+    hass: HomeAssistant,
+    state_1: State,
+    client: Mock,
+) -> None:
+    """Test FM genre and menu sensor values."""
+    state_1.get_source.return_value = SourceCodes.FM
+    state_1.command_values[FM_GENRE] = "Rock"
+    state_1.command_values[MENU] = MenuCodes.TUNER
+
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    genre = hass.states.get("sensor.arcam_fmj_127_0_0_1_fm_genre")
+    menu = hass.states.get("sensor.arcam_fmj_127_0_0_1_menu")
+    assert genre is not None
+    assert genre.state == "Rock"
+    assert menu is not None
+    assert menu.state == "tuner"
+
+    state_1.get_source.return_value = SourceCodes.DAB
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    genre = hass.states.get("sensor.arcam_fmj_127_0_0_1_fm_genre")
+    assert genre is not None
+    assert genre.state == "unavailable"
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default", "player_setup")
+async def test_sensor_zone_support(hass: HomeAssistant) -> None:
+    """Test command zone metadata filters sensor creation."""
+    assert hass.states.get("sensor.arcam_fmj_127_0_0_1_zone_2_fm_genre") is not None
+    assert hass.states.get("sensor.arcam_fmj_127_0_0_1_zone_2_menu") is None
 
 
 @pytest.mark.parametrize("device_model", ["SA30"], indirect=True)

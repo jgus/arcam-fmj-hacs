@@ -46,6 +46,9 @@
             }
         },
         "sensor": {
+            "fm_genre": {
+                "name": "FM genre"
+            },
             "incoming_audio_config": {
                 "name": "Incoming audio configuration",
                 "state": {
@@ -152,6 +155,21 @@
             },
             "incoming_video_vertical_resolution": {
                 "name": "Incoming video vertical resolution"
+            },
+            "menu": {
+                "name": "Menu",
+                "state": {
+                    "bass": "Bass",
+                    "network": "Network",
+                    "none": "None",
+                    "setup": "Setup",
+                    "sub": "Subwoofer",
+                    "sync": "Lip sync",
+                    "treble": "Treble",
+                    "trim": "Trim",
+                    "tuner": "Tuner",
+                    "usb": "USB"
+                }
             }
         }
     },
