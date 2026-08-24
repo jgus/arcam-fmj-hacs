@@ -7,6 +7,7 @@ from arcam.fmj.codecs import ZoneOsd
 from arcam.fmj.commands import (
     DIRECT_MODE,
     DOLBY_PLIIX_PANORAMA,
+    HEADPHONES_OVERRIDE,
     ZONE_1_OSD_ON_OFF,
 )
 from arcam.fmj.state import State
@@ -18,7 +19,14 @@ from homeassistant.components.switch import (
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
 )
-from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON, Platform
+from homeassistant.const import (
+    ATTR_ASSUMED_STATE,
+    ATTR_ENTITY_ID,
+    STATE_OFF,
+    STATE_ON,
+    STATE_UNKNOWN,
+    Platform,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -32,6 +40,7 @@ ENTITY_IDS = {
     DOLBY_PLIIX_PANORAMA: "switch.arcam_fmj_127_0_0_1_dolby_pliix_panorama",
     ZONE_1_OSD_ON_OFF: "switch.arcam_fmj_127_0_0_1_zone_1_osd",
 }
+HEADPHONES_OVERRIDE_ENTITY_ID = "switch.arcam_fmj_127_0_0_1_headphone_override"
 
 
 @pytest.fixture(autouse=True)
@@ -104,19 +113,52 @@ async def test_read_and_write(
     ]
 
 
-@pytest.mark.parametrize("device_model", ["SA20"], indirect=True)
+@pytest.mark.parametrize("device_model", ["AVR450"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_headphones_override(
+    hass: HomeAssistant,
+    state_1: State,
+) -> None:
+    """Test the write-only headphone override switch."""
+    entity_state = hass.states.get(HEADPHONES_OVERRIDE_ENTITY_ID)
+    assert entity_state is not None
+    assert entity_state.state == STATE_UNKNOWN
+    assert entity_state.attributes[ATTR_ASSUMED_STATE]
+
+    await hass.services.async_call(
+        SWITCH_DOMAIN,
+        SERVICE_TURN_ON,
+        {ATTR_ENTITY_ID: HEADPHONES_OVERRIDE_ENTITY_ID},
+        blocking=True,
+    )
+    await hass.services.async_call(
+        SWITCH_DOMAIN,
+        SERVICE_TURN_OFF,
+        {ATTR_ENTITY_ID: HEADPHONES_OVERRIDE_ENTITY_ID},
+        blocking=True,
+    )
+
+    assert state_1.set.await_args_list == [
+        call(HEADPHONES_OVERRIDE, True),
+        call(HEADPHONES_OVERRIDE, False),
+    ]
+
+
+@pytest.mark.parametrize("device_model", ["PA240"], indirect=True)
 @pytest.mark.usefixtures("player_setup")
 async def test_model_support(hass: HomeAssistant) -> None:
     """Test switches are created only for supported models."""
     for entity_id in ENTITY_IDS.values():
         assert hass.states.get(entity_id) is None
+    assert hass.states.get(HEADPHONES_OVERRIDE_ENTITY_ID) is None
 
 
 @pytest.mark.parametrize("device_model", ["AVR450"], indirect=True)
 @pytest.mark.usefixtures("entity_registry_enabled_by_default", "player_setup")
 async def test_zone_support(hass: HomeAssistant) -> None:
-    """Test switches are not created in unsupported zones."""
-    assert not any(
-        state.entity_id.startswith("switch.arcam_fmj_127_0_0_1_zone_2")
+    """Test switches are created only in supported zones."""
+    assert {
+        state.entity_id
         for state in hass.states.async_all(SWITCH_DOMAIN)
-    )
+        if "_zone_2_" in state.entity_id
+    } == {"switch.arcam_fmj_127_0_0_1_zone_2_headphone_override"}

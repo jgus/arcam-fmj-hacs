@@ -155,6 +155,9 @@
       "dolby_pliix_panorama": {
         "default": "mdi:panorama-wide-angle"
       },
+      "headphones_override": {
+        "default": "mdi:headphones-settings"
+      },
       "zone_1_osd": {
         "default": "mdi:monitor-dashboard"
       }

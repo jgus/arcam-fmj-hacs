@@ -8,8 +8,9 @@ from arcam.fmj.codecs import ZoneOsd
 from arcam.fmj.commands import (
     DIRECT_MODE,
     DOLBY_PLIIX_PANORAMA,
+    HEADPHONES_OVERRIDE,
     ZONE_1_OSD_ON_OFF,
-    ReadWriteCommand,
+    WriteCommand,
 )
 from arcam.fmj.state import State
 
@@ -35,10 +36,11 @@ class ArcamFmjSwitchEntityDescription(
 ):
     """Describes an Arcam FMJ switch entity."""
 
-    command: ReadWriteCommand[Any]
-    value_fn: Callable[[State], bool | None]
+    command: WriteCommand[Any]
+    value_fn: Callable[[State], bool | None] | None = None
     on_value: Any = True
     off_value: Any = False
+    assumed: bool = False
 
 
 SWITCHES: tuple[ArcamFmjSwitchEntityDescription, ...] = (
@@ -69,6 +71,13 @@ SWITCHES: tuple[ArcamFmjSwitchEntityDescription, ...] = (
         on_value=ZoneOsd.ON,
         off_value=ZoneOsd.OFF,
     ),
+    ArcamFmjSwitchEntityDescription(
+        key="headphones_override",
+        command=HEADPHONES_OVERRIDE,
+        translation_key="headphones_override",
+        entity_category=EntityCategory.CONFIG,
+        assumed=True,
+    ),
 )
 
 
@@ -94,7 +103,15 @@ class ArcamFmjSwitchEntity(ArcamFmjEntity, SwitchEntity):
     @override
     def is_on(self) -> bool | None:
         """Return the switch state."""
+        if self.entity_description.value_fn is None:
+            return None
         return self.entity_description.value_fn(self.coordinator.state)
+
+    @property
+    @override
+    def assumed_state(self) -> bool:
+        """Return whether the switch state is assumed."""
+        return self.entity_description.assumed
 
     @convert_exception
     @override
