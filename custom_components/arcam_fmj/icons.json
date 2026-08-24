@@ -156,6 +156,9 @@
       "lifter_temperature": {
         "default": "mdi:thermometer-lines"
       },
+      "lifter_temperature_2": {
+        "default": "mdi:thermometer-lines"
+      },
       "menu": {
         "default": "mdi:menu"
       },

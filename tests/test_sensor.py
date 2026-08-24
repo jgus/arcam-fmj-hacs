@@ -10,6 +10,7 @@ from arcam.fmj.codecs import (
     IncomingVideoColorspace,
     MenuCodes,
     SourceCodes,
+    TemperatureSensor,
 )
 from arcam.fmj.commands import (
     FM_GENRE,
@@ -211,6 +212,36 @@ async def test_temperature_sensors(
         hass.states.get("sensor.arcam_fmj_127_0_0_1_zone_2_lifter_temperature_1")
         is None
     )
+
+
+@pytest.mark.parametrize("device_model", ["PA240"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_lifter_temperature_sensor_2(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    state_1: State,
+) -> None:
+    """Test coordinator polling for the second lifter temperature sensor."""
+    state_1.get_lifter_temperature.reset_mock()
+    state_1.get_lifter_temperature.return_value = 43
+
+    coordinator = mock_config_entry.runtime_data.coordinators[1]
+    await coordinator.async_refresh()
+
+    state_1.get_lifter_temperature.assert_awaited_once_with(TemperatureSensor.SENSOR_2)
+    state = hass.states.get("sensor.arcam_fmj_127_0_0_1_lifter_temperature_2")
+    assert state is not None
+    assert state.state == "43"
+    assert state.attributes["unit_of_measurement"] == UnitOfTemperature.CELSIUS
+
+
+@pytest.mark.parametrize("device_model", ["SA30"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_lifter_temperature_sensor_2_model_support(
+    hass: HomeAssistant,
+) -> None:
+    """Test the second lifter sensor is limited to multi-sensor models."""
+    assert hass.states.get("sensor.arcam_fmj_127_0_0_1_lifter_temperature_2") is None
 
 
 @pytest.mark.parametrize("device_model", ["SA30"], indirect=True)

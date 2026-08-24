@@ -397,6 +397,9 @@
       "lifter_temperature": {
         "name": "Lifter temperature 1"
       },
+      "lifter_temperature_2": {
+        "name": "Lifter temperature 2"
+      },
       "menu": {
         "name": "Menu",
         "state": {

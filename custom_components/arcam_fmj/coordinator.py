@@ -1,19 +1,26 @@
 """Coordinator for Arcam FMJ integration."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 import logging
 from typing import Any, override
 
 from arcam.fmj.client import Client
+from arcam.fmj.codecs import TemperatureSensor
 from arcam.fmj.commands import (
+    LIFTER_TEMPERATURE,
     SOFTWARE_VERSION,
     SYSTEM_MODEL,
     Command,
     CommandFlags,
+    ReadCommand,
 )
-from arcam.fmj.errors import ConnectionFailed, NotConnectedException
+from arcam.fmj.errors import (
+    ConnectionFailed,
+    NotConnectedException,
+    ResponseException,
+)
 from arcam.fmj.packets import AmxDuetResponse, ResponsePacket
 from arcam.fmj.state import State
 
@@ -61,6 +68,7 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
         self.state = State(client, zone)
         self.update_in_progress = False
         self.model: str | None = None
+        self._temperature_sensor_2_values: dict[ReadCommand[int], int | None] = {}
 
         device_name = config_entry.title
         unique_id = config_entry.unique_id or config_entry.entry_id
@@ -125,12 +133,41 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
             system_model,
         )
 
+    def temperature_sensor_2_value(self, command: ReadCommand[int]) -> int | None:
+        """Return a coordinator-polled secondary temperature."""
+        return self._temperature_sensor_2_values.get(command)
+
+    async def _async_poll_temperature_sensor_2(
+        self,
+        command: ReadCommand[int],
+        read_temperature: Callable[[TemperatureSensor], Awaitable[int | None]],
+    ) -> None:
+        try:
+            value = await read_temperature(TemperatureSensor.SENSOR_2)
+        except ResponseException as err:
+            _LOGGER.debug("Response error polling %s sensor 2: %s", command, err.ac)
+            self._temperature_sensor_2_values[command] = None
+        except TimeoutError:
+            _LOGGER.error("Timeout polling %s sensor 2", command)
+            self._temperature_sensor_2_values[command] = None
+        else:
+            self._temperature_sensor_2_values[command] = value
+
     @override
     async def _async_update_data(self) -> None:
         """Fetch data for manual refresh."""
         try:
             self.update_in_progress = True
             await self.state.update()
+            if (
+                self.state.zn == 1
+                and TemperatureSensor.SENSOR_2
+                in LIFTER_TEMPERATURE.supported_sensors(self.state.model)
+                and self.state.is_command_supported(LIFTER_TEMPERATURE)
+            ):
+                await self._async_poll_temperature_sensor_2(
+                    LIFTER_TEMPERATURE, self.state.get_lifter_temperature
+                )
         except (ConnectionFailed, NotConnectedException) as err:
             raise UpdateFailed(
                 f"Connection failed during update for zone {self.state.zn}"
