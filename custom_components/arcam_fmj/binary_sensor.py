@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import override
 
+from arcam.fmj.commands import INCOMING_VIDEO_PARAMETERS
 from arcam.fmj.state import State
 
 from homeassistant.components.binary_sensor import (
@@ -35,7 +36,7 @@ BINARY_SENSORS: tuple[ArcamFmjBinarySensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda state: (
             vp.interlaced
-            if (vp := state.get_incoming_video_parameters()) is not None
+            if (vp := state.get(INCOMING_VIDEO_PARAMETERS)) is not None
             else None
         ),
     ),

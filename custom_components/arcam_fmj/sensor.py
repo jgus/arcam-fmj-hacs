@@ -5,8 +5,18 @@ from dataclasses import dataclass
 import logging
 from typing import override
 
-from arcam.fmj import IncomingVideoAspectRatio, IncomingVideoColorspace, IntOrTypeEnum
-from arcam.fmj.state import IncomingAudioConfig, IncomingAudioFormat, State
+from arcam.fmj.codecs import (
+    IncomingAudioConfig,
+    IncomingAudioFormat,
+    IncomingVideoAspectRatio,
+    IncomingVideoColorspace,
+)
+from arcam.fmj.commands import (
+    INCOMING_AUDIO_SAMPLE_RATE,
+    INCOMING_VIDEO_PARAMETERS,
+)
+from arcam.fmj.models import IntOrTypeEnum
+from arcam.fmj.state import State
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -61,7 +71,7 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
         suggested_display_precision=0,
         value_fn=lambda state: (
             vp.horizontal_resolution
-            if (vp := state.get_incoming_video_parameters()) is not None
+            if (vp := state.get(INCOMING_VIDEO_PARAMETERS)) is not None
             else None
         ),
     ),
@@ -74,7 +84,7 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
         suggested_display_precision=0,
         value_fn=lambda state: (
             vp.vertical_resolution
-            if (vp := state.get_incoming_video_parameters()) is not None
+            if (vp := state.get(INCOMING_VIDEO_PARAMETERS)) is not None
             else None
         ),
     ),
@@ -88,7 +98,7 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
         suggested_display_precision=0,
         value_fn=lambda state: (
             vp.refresh_rate
-            if (vp := state.get_incoming_video_parameters()) is not None
+            if (vp := state.get(INCOMING_VIDEO_PARAMETERS)) is not None
             else None
         ),
     ),
@@ -100,7 +110,7 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
         options=_enum_options(IncomingVideoAspectRatio),
         value_fn=lambda state: (
             _enum_value(vp.aspect_ratio)
-            if (vp := state.get_incoming_video_parameters()) is not None
+            if (vp := state.get(INCOMING_VIDEO_PARAMETERS)) is not None
             else None
         ),
     ),
@@ -112,7 +122,7 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
         options=_enum_options(IncomingVideoColorspace),
         value_fn=lambda state: (
             _enum_value(vp.colorspace)
-            if (vp := state.get_incoming_video_parameters()) is not None
+            if (vp := state.get(INCOMING_VIDEO_PARAMETERS)) is not None
             else None
         ),
     ),
@@ -142,7 +152,7 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
         suggested_display_precision=0,
         value_fn=lambda state: (
             None
-            if (sample_rate := state.get_incoming_audio_sample_rate()) == 0
+            if (sample_rate := state.get(INCOMING_AUDIO_SAMPLE_RATE)) == 0
             else sample_rate
         ),
     ),

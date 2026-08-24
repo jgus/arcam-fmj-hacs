@@ -3,8 +3,17 @@
 from collections.abc import Generator
 from unittest.mock import Mock, patch
 
-from arcam.fmj import IncomingVideoAspectRatio, IncomingVideoColorspace
-from arcam.fmj.state import IncomingAudioConfig, IncomingAudioFormat, State
+from arcam.fmj.codecs import (
+    IncomingAudioConfig,
+    IncomingAudioFormat,
+    IncomingVideoAspectRatio,
+    IncomingVideoColorspace,
+)
+from arcam.fmj.commands import (
+    INCOMING_AUDIO_SAMPLE_RATE,
+    INCOMING_VIDEO_PARAMETERS,
+)
+from arcam.fmj.state import State
 import pytest
 from syrupy.assertion import SnapshotAssertion
 
@@ -12,7 +21,10 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry, snapshot_platform
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    snapshot_platform,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -47,7 +59,7 @@ async def test_sensor_video_parameters(
     video_params.aspect_ratio = IncomingVideoAspectRatio.ASPECT_16_9
     video_params.colorspace = IncomingVideoColorspace.HDR10
 
-    state_1.get_incoming_video_parameters.return_value = video_params
+    state_1.command_values[INCOMING_VIDEO_PARAMETERS] = video_params
     client.notify_data_updated()
     await hass.async_block_till_done()
 
@@ -75,7 +87,7 @@ async def test_sensor_audio_parameters(
         IncomingAudioFormat.PCM,
         IncomingAudioConfig.STEREO_ONLY,
     )
-    state_1.get_incoming_audio_sample_rate.return_value = 48000
+    state_1.command_values[INCOMING_AUDIO_SAMPLE_RATE] = 48000
 
     client.notify_data_updated()
     await hass.async_block_till_done()
@@ -108,7 +120,7 @@ async def test_sensor_enum_unknown(
     video_params.aspect_ratio = IncomingVideoAspectRatio.from_int(0x99)
     video_params.colorspace = IncomingVideoColorspace.from_int(0x99)
 
-    state_1.get_incoming_video_parameters.return_value = video_params
+    state_1.command_values[INCOMING_VIDEO_PARAMETERS] = video_params
     state_1.get_incoming_audio_format.return_value = (
         None,
         IncomingAudioConfig.from_int(0x99),

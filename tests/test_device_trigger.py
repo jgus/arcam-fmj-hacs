@@ -1,5 +1,6 @@
 """The tests for Arcam FMJ Receiver control device triggers."""
 
+from arcam.fmj.commands import POWER
 from arcam.fmj.state import State
 
 from homeassistant.components import automation
@@ -11,7 +12,10 @@ from homeassistant.setup import async_setup_component
 
 from conftest import MOCK_ENTITY_ID
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry, async_get_device_automations
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_get_device_automations,
+)
 
 
 async def test_get_triggers(
@@ -63,7 +67,7 @@ async def test_if_fires_on_turn_on_request(
     """Test for turn_on and turn_off triggers firing."""
     entry = entity_registry.async_get(MOCK_ENTITY_ID)
 
-    state_1.get_power.return_value = None
+    state_1.command_values[POWER] = None
 
     assert await async_setup_component(
         hass,
@@ -113,7 +117,7 @@ async def test_if_fires_on_turn_on_request_legacy(
     """Test for turn_on and turn_off triggers firing."""
     entry = entity_registry.async_get(MOCK_ENTITY_ID)
 
-    state_1.get_power.return_value = None
+    state_1.command_values[POWER] = None
 
     assert await async_setup_component(
         hass,

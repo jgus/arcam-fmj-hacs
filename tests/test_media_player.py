@@ -4,7 +4,17 @@ from collections.abc import Generator
 from math import isclose
 from unittest.mock import Mock, PropertyMock, patch
 
-from arcam.fmj import ConnectionFailed, DecodeMode2CH, DecodeModeMCH, SourceCodes
+from arcam.fmj.codecs import DecodeMode2CH, DecodeModeMCH, SourceCodes
+from arcam.fmj.commands import (
+    DAB_STATION,
+    DLS_PDT,
+    MUTE,
+    POWER,
+    RDS_INFORMATION,
+    TUNER_PRESET,
+    VOLUME,
+)
+from arcam.fmj.errors import ConnectionFailed, NotConnectedException
 from arcam.fmj.state import State
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -43,7 +53,10 @@ from homeassistant.helpers import entity_registry as er
 
 from conftest import MOCK_ENTITY_ID
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry, snapshot_platform
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    snapshot_platform,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -93,7 +106,7 @@ async def update(hass: HomeAssistant, client: Mock, entity_id: str) -> CoreState
 async def test_powered_off(hass: HomeAssistant, client: Mock, state_1: State) -> None:
     """Test properties in powered off state."""
     state_1.get_source.return_value = None
-    state_1.get_power.return_value = False
+    state_1.command_values[POWER] = False
 
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert "source" not in data.attributes
@@ -104,7 +117,7 @@ async def test_powered_off(hass: HomeAssistant, client: Mock, state_1: State) ->
 async def test_power_unknown(hass: HomeAssistant, client: Mock, state_1: State) -> None:
     """Test that an unreported power state surfaces as unknown, not off."""
     state_1.get_source.return_value = None
-    state_1.get_power.return_value = None
+    state_1.command_values[POWER] = None
 
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert data.state == "unknown"
@@ -114,7 +127,7 @@ async def test_power_unknown(hass: HomeAssistant, client: Mock, state_1: State) 
 async def test_powered_on(hass: HomeAssistant, client: Mock, state_1: State) -> None:
     """Test properties in powered on state."""
     state_1.get_source.return_value = SourceCodes.PVR
-    state_1.get_power.return_value = True
+    state_1.command_values[POWER] = True
 
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert data.attributes["source"] == "PVR"
@@ -124,23 +137,23 @@ async def test_powered_on(hass: HomeAssistant, client: Mock, state_1: State) -> 
 @pytest.mark.usefixtures("player_setup")
 async def test_turn_on(hass: HomeAssistant, state_1: State) -> None:
     """Test turn on service."""
-    state_1.get_power.return_value = None
+    state_1.command_values[POWER] = None
     await hass.services.async_call(
         MEDIA_PLAYER_DOMAIN,
         SERVICE_TURN_ON,
         service_data={ATTR_ENTITY_ID: MOCK_ENTITY_ID},
         blocking=True,
     )
-    state_1.set_power.assert_not_called()
+    state_1.set.assert_not_called()
 
-    state_1.get_power.return_value = False
+    state_1.command_values[POWER] = False
     await hass.services.async_call(
         MEDIA_PLAYER_DOMAIN,
         SERVICE_TURN_ON,
         service_data={ATTR_ENTITY_ID: MOCK_ENTITY_ID},
         blocking=True,
     )
-    state_1.set_power.assert_called_with(True)
+    state_1.set.assert_called_with(POWER, True)
 
 
 @pytest.mark.usefixtures("player_setup")
@@ -152,7 +165,7 @@ async def test_turn_off(hass: HomeAssistant, state_1: State) -> None:
         service_data={ATTR_ENTITY_ID: MOCK_ENTITY_ID},
         blocking=True,
     )
-    state_1.set_power.assert_called_with(False)
+    state_1.set.assert_called_with(POWER, False)
 
 
 @pytest.mark.parametrize("mute", [True, False])
@@ -165,7 +178,7 @@ async def test_mute_volume(hass: HomeAssistant, state_1: State, mute: bool) -> N
         service_data={ATTR_ENTITY_ID: MOCK_ENTITY_ID, ATTR_MEDIA_VOLUME_MUTED: mute},
         blocking=True,
     )
-    state_1.set_mute.assert_called_with(mute)
+    state_1.set.assert_called_with(MUTE, mute)
 
 
 @pytest.mark.usefixtures("player_setup")
@@ -180,14 +193,19 @@ async def test_update(hass: HomeAssistant, state_1: State) -> None:
     state_1.update.assert_called_with()
 
 
+@pytest.mark.parametrize(
+    "update_exception",
+    [ConnectionFailed, NotConnectedException],
+)
 @pytest.mark.usefixtures("player_setup")
 async def test_update_lost(
     hass: HomeAssistant,
     state_1: State,
     caplog: pytest.LogCaptureFixture,
+    update_exception: type[Exception],
 ) -> None:
     """Test update, with connection loss is ignored."""
-    state_1.update.side_effect = ConnectionFailed()
+    state_1.update.side_effect = update_exception()
 
     await hass.services.async_call(
         HA_DOMAIN,
@@ -302,7 +320,7 @@ async def test_volume_up(hass: HomeAssistant, state_1: State) -> None:
         service_data={ATTR_ENTITY_ID: MOCK_ENTITY_ID},
         blocking=True,
     )
-    state_1.inc_volume.assert_called_with()
+    state_1.inc.assert_called_with(VOLUME)
 
 
 @pytest.mark.usefixtures("player_setup")
@@ -314,7 +332,7 @@ async def test_volume_down(hass: HomeAssistant, state_1: State) -> None:
         service_data={ATTR_ENTITY_ID: MOCK_ENTITY_ID},
         blocking=True,
     )
-    state_1.dec_volume.assert_called_with()
+    state_1.dec.assert_called_with(VOLUME)
 
 
 @pytest.mark.usefixtures("player_setup")
@@ -330,7 +348,7 @@ async def test_play_media(hass: HomeAssistant, state_1: State) -> None:
         },
         blocking=True,
     )
-    state_1.set_tuner_preset.assert_called_with(1)
+    state_1.set.assert_called_with(TUNER_PRESET, 1)
 
 
 @pytest.mark.usefixtures("player_setup")
@@ -353,7 +371,20 @@ async def test_play_media_invalid(hass: HomeAssistant, state_1: State) -> None:
             },
             blocking=True,
         )
-    state_1.set_tuner_preset.assert_not_called()
+    state_1.set.assert_not_called()
+
+
+async def test_browse_media_without_presets(state_1: State) -> None:
+    coordinator = Mock()
+    coordinator.state = state_1
+    coordinator.device_info = {}
+    coordinator.zone_unique_id = "zone-1"
+    coordinator.device_name = "Arcam FMJ"
+    state_1.get_preset_details.return_value = None
+
+    result = await ArcamFmj(coordinator).async_browse_media()
+
+    assert result.children == []
 
 
 @pytest.mark.parametrize(
@@ -405,15 +436,15 @@ async def test_is_volume_muted(
     hass: HomeAssistant, client: Mock, state_1: State
 ) -> None:
     """Test muted."""
-    state_1.get_mute.return_value = True
+    state_1.command_values[MUTE] = True
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert data.attributes.get(ATTR_MEDIA_VOLUME_MUTED) is True
 
-    state_1.get_mute.return_value = False
+    state_1.command_values[MUTE] = False
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert data.attributes.get(ATTR_MEDIA_VOLUME_MUTED) is False
 
-    state_1.get_mute.return_value = None
+    state_1.command_values[MUTE] = None
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert data.attributes.get(ATTR_MEDIA_VOLUME_MUTED) is None
 
@@ -421,19 +452,19 @@ async def test_is_volume_muted(
 @pytest.mark.usefixtures("player_setup")
 async def test_volume_level(hass: HomeAssistant, client: Mock, state_1: State) -> None:
     """Test volume."""
-    state_1.get_volume.return_value = 0
+    state_1.command_values[VOLUME] = 0
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert isclose(data.attributes[ATTR_MEDIA_VOLUME_LEVEL], 0.0)
 
-    state_1.get_volume.return_value = 50
+    state_1.command_values[VOLUME] = 50
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert isclose(data.attributes[ATTR_MEDIA_VOLUME_LEVEL], 50.0 / 99)
 
-    state_1.get_volume.return_value = 99
+    state_1.command_values[VOLUME] = 99
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert isclose(data.attributes[ATTR_MEDIA_VOLUME_LEVEL], 1.0)
 
-    state_1.get_volume.return_value = None
+    state_1.command_values[VOLUME] = None
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert ATTR_MEDIA_VOLUME_LEVEL not in data.attributes
 
@@ -451,14 +482,22 @@ async def test_set_volume_level(
         blocking=True,
     )
 
-    state_1.set_volume.assert_called_with(call)
+    state_1.set.assert_called_with(VOLUME, call)
 
 
+@pytest.mark.parametrize(
+    "set_exception",
+    [ConnectionFailed, NotConnectedException],
+)
 @pytest.mark.usefixtures("player_setup")
-async def test_set_volume_level_lost(hass: HomeAssistant, state_1: State) -> None:
+async def test_set_volume_level_lost(
+    hass: HomeAssistant,
+    state_1: State,
+    set_exception: type[Exception],
+) -> None:
     """Test setting volume, with a lost connection."""
 
-    state_1.set_volume.side_effect = ConnectionFailed()
+    state_1.set.side_effect = set_exception()
 
     with pytest.raises(
         HomeAssistantError,
@@ -519,8 +558,8 @@ async def test_media_channel(
     channel: str | None,
 ) -> None:
     """Test media channel."""
-    state_1.get_dab_station.return_value = dab
-    state_1.get_rds_information.return_value = rds
+    state_1.command_values[DAB_STATION] = dab
+    state_1.command_values[RDS_INFORMATION] = rds
     state_1.get_source.return_value = source
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert data.attributes.get(ATTR_MEDIA_CHANNEL) == channel
@@ -544,7 +583,7 @@ async def test_media_artist(
     artist: str | None,
 ) -> None:
     """Test media artist."""
-    state_1.get_dls_pdt.return_value = dls
+    state_1.command_values[DLS_PDT] = dls
     state_1.get_source.return_value = source
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert data.attributes.get(ATTR_MEDIA_ARTIST) == artist

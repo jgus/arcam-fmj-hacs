@@ -3,7 +3,16 @@
 import logging
 from typing import Any, override
 
-from arcam.fmj import SourceCodes
+from arcam.fmj.codecs import SourceCodes
+from arcam.fmj.commands import (
+    DAB_STATION,
+    DLS_PDT,
+    MUTE,
+    POWER,
+    RDS_INFORMATION,
+    TUNER_PRESET,
+    VOLUME,
+)
 
 from homeassistant.components.media_player import (
     BrowseError,
@@ -72,7 +81,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         not yet reported a power state; this is distinct from a real
         powered-off state and must not be collapsed to ``OFF``.
         """
-        power = self._state.get_power()
+        power = self._state.get(POWER)
         if power is None:
             return None
         return MediaPlayerState.ON if power else MediaPlayerState.OFF
@@ -81,7 +90,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
     @override
     async def async_mute_volume(self, mute: bool) -> None:
         """Send mute command."""
-        await self._state.set_mute(mute)
+        await self._state.set(MUTE, mute)
         self.async_write_ha_state()
 
     @convert_exception
@@ -119,30 +128,30 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
     @override
     async def async_set_volume_level(self, volume: float) -> None:
         """Set volume level, range 0..1."""
-        await self._state.set_volume(round(volume * 99.0))
+        await self._state.set(VOLUME, round(volume * 99.0))
         self.async_write_ha_state()
 
     @convert_exception
     @override
     async def async_volume_up(self) -> None:
         """Turn volume up for media player."""
-        await self._state.inc_volume()
+        await self._state.inc(VOLUME)
         self.async_write_ha_state()
 
     @convert_exception
     @override
     async def async_volume_down(self) -> None:
         """Turn volume up for media player."""
-        await self._state.dec_volume()
+        await self._state.dec(VOLUME)
         self.async_write_ha_state()
 
     @convert_exception
     @override
     async def async_turn_on(self) -> None:
         """Turn the media player on."""
-        if self._state.get_power() is not None:
+        if self._state.get(POWER) is not None:
             _LOGGER.debug("Turning on device using connection")
-            await self._state.set_power(True)
+            await self._state.set(POWER, True)
         else:
             _LOGGER.debug("Firing event to turn on device")
             self.hass.bus.async_fire(EVENT_TURN_ON, {ATTR_ENTITY_ID: self.entity_id})
@@ -151,7 +160,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
     @override
     async def async_turn_off(self) -> None:
         """Turn the media player off."""
-        await self._state.set_power(False)
+        await self._state.set(POWER, False)
 
     @override
     async def async_browse_media(
@@ -165,7 +174,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
                 f"Media not found: {media_content_type} / {media_content_id}"
             )
 
-        presets = self._state.get_preset_details()
+        presets = self._state.get_preset_details() or {}
 
         radio = [
             BrowseMedia(
@@ -198,7 +207,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
 
         if media_id.startswith("preset:"):
             preset = int(media_id[7:])
-            await self._state.set_tuner_preset(preset)
+            await self._state.set(TUNER_PRESET, preset)
         else:
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
@@ -240,7 +249,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
     @override
     def is_volume_muted(self) -> bool | None:
         """Boolean if volume is currently muted."""
-        if (value := self._state.get_mute()) is None:
+        if (value := self._state.get(MUTE)) is None:
             return None
         return value
 
@@ -248,7 +257,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
     @override
     def volume_level(self) -> float | None:
         """Volume level of device."""
-        if (value := self._state.get_volume()) is None:
+        if (value := self._state.get(VOLUME)) is None:
             return None
         return value / 99.0
 
@@ -269,7 +278,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         """Content type of current playing media."""
         source = self._state.get_source()
         if source in (SourceCodes.DAB, SourceCodes.FM):
-            if preset := self._state.get_tuner_preset():
+            if preset := self._state.get(TUNER_PRESET):
                 value = f"preset:{preset}"
             else:
                 value = None
@@ -284,9 +293,9 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         """Channel currently playing."""
         source = self._state.get_source()
         if source is SourceCodes.DAB:
-            value = self._state.get_dab_station()
+            value = self._state.get(DAB_STATION)
         elif source is SourceCodes.FM:
-            value = self._state.get_rds_information()
+            value = self._state.get(RDS_INFORMATION)
         else:
             value = None
         return value
@@ -296,7 +305,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
     def media_artist(self) -> str | None:
         """Artist of current playing media, music track only."""
         if self._state.get_source() is SourceCodes.DAB:
-            value = self._state.get_dls_pdt()
+            value = self._state.get(DLS_PDT)
         else:
             value = None
         return value

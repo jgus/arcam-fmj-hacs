@@ -1,14 +1,31 @@
 """Tests for the Arcam FMJ config entry setup."""
 
+from asyncio import CancelledError
+from unittest.mock import Mock
+
 import pytest
 
+from custom_components.arcam_fmj import _run_client
 from custom_components.arcam_fmj.const import DOMAIN
+from custom_components.arcam_fmj.coordinator import ArcamFmjRuntimeData
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from conftest import MOCK_UUID
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+
+async def test_client_retries_connection_error(
+    hass: HomeAssistant,
+    client: Mock,
+) -> None:
+    client.start.side_effect = [ConnectionRefusedError(), CancelledError()]
+
+    with pytest.raises(CancelledError):
+        await _run_client(hass, ArcamFmjRuntimeData(client, {}), 0)
+
+    assert client.start.await_count == 2
 
 
 @pytest.mark.usefixtures("player_setup")

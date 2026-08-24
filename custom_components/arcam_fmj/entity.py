@@ -4,7 +4,7 @@ from collections.abc import Callable, Coroutine
 import functools
 from typing import Any, override
 
-from arcam.fmj import ConnectionFailed
+from arcam.fmj.errors import ConnectionFailed, NotConnectedException
 
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityDescription
@@ -23,7 +23,7 @@ def convert_exception[**_P, _R](
     async def _convert_exception(*args: _P.args, **kwargs: _P.kwargs) -> _R:
         try:
             return await func(*args, **kwargs)
-        except ConnectionFailed as exception:
+        except (ConnectionFailed, NotConnectedException) as exception:
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="connection_failed"
             ) from exception

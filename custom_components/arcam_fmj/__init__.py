@@ -5,8 +5,8 @@ from asyncio import timeout
 from contextlib import AsyncExitStack
 import logging
 
-from arcam.fmj import ConnectionFailed
 from arcam.fmj.client import Client
+from arcam.fmj.errors import ConnectionFailed
 
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant
@@ -85,7 +85,7 @@ async def _run_client(
                 finally:
                     _LOGGER.debug("Client disconnected %s", client.host)
 
-        except ConnectionFailed:
+        except (ConnectionFailed, OSError):
             pass
         except TimeoutError:
             continue

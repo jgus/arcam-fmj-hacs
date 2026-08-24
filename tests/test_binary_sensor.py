@@ -3,6 +3,7 @@
 from collections.abc import Generator
 from unittest.mock import Mock, patch
 
+from arcam.fmj.commands import INCOMING_VIDEO_PARAMETERS
 from arcam.fmj.state import State
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -11,15 +12,16 @@ from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNKNOWN, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from pytest_homeassistant_custom_component.common import MockConfigEntry, snapshot_platform
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    snapshot_platform,
+)
 
 
 @pytest.fixture(autouse=True)
 def binary_sensor_only() -> Generator[None]:
     """Limit platform setup to binary_sensor only."""
-    with patch(
-        "custom_components.arcam_fmj.PLATFORMS", [Platform.BINARY_SENSOR]
-    ):
+    with patch("custom_components.arcam_fmj.PLATFORMS", [Platform.BINARY_SENSOR]):
         yield
 
 
@@ -55,7 +57,7 @@ async def test_binary_sensor_interlaced(
     """Test binary sensor reports on when video is interlaced."""
     video_params = Mock()
     video_params.interlaced = True
-    state_1.get_incoming_video_parameters.return_value = video_params
+    state_1.command_values[INCOMING_VIDEO_PARAMETERS] = video_params
 
     client.notify_data_updated()
     await hass.async_block_till_done()
@@ -76,7 +78,7 @@ async def test_binary_sensor_not_interlaced(
     """Test binary sensor reports off when video is not interlaced."""
     video_params = Mock()
     video_params.interlaced = False
-    state_1.get_incoming_video_parameters.return_value = video_params
+    state_1.command_values[INCOMING_VIDEO_PARAMETERS] = video_params
 
     client.notify_data_updated()
     await hass.async_block_till_done()

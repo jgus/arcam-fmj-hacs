@@ -6,7 +6,8 @@ HACS drop-in replacement for the [arcam_fmj](https://www.home-assistant.io/integ
 
 `custom_components/arcam_fmj` is copied verbatim from `homeassistant/components/arcam_fmj` at core commit `1db381611fbe5f80cf8210d5ab36b73ef9ddeaaa` (2026-08-23), with only these deviations:
 
-- `manifest.json` gains a `version` key (required by HACS) and `@jgus` as a codeowner
+- `manifest.json` gains a `version` key (required by HACS), `@jgus` as a codeowner, and pins the current `jgus/arcam_fmj` `working` tip
+- the integration and tests use the library's 2.x command API
 - `tests/` mirrors `tests/components/arcam_fmj` from core, ported to run standalone via [pytest-homeassistant-custom-component](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component)
 
 When porting changes back to core, diff against the corresponding upstream files; everything else should be a clean transplant.

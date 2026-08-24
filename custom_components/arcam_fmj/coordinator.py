@@ -6,8 +6,9 @@ from dataclasses import dataclass
 import logging
 from typing import override
 
-from arcam.fmj import ConnectionFailed
-from arcam.fmj.client import AmxDuetResponse, Client, ResponsePacket
+from arcam.fmj.client import Client
+from arcam.fmj.errors import ConnectionFailed, NotConnectedException
+from arcam.fmj.packets import AmxDuetResponse, ResponsePacket
 from arcam.fmj.state import State
 
 from homeassistant.config_entries import ConfigEntry
@@ -25,7 +26,7 @@ class ArcamFmjRuntimeData:
     """Runtime data for Arcam FMJ integration."""
 
     client: Client
-    coordinators: dict[int, ArcamFmjCoordinator]
+    coordinators: dict[int, "ArcamFmjCoordinator"]
 
 
 type ArcamFmjConfigEntry = ConfigEntry[ArcamFmjRuntimeData]
@@ -76,7 +77,7 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
         try:
             self.update_in_progress = True
             await self.state.update()
-        except ConnectionFailed as err:
+        except (ConnectionFailed, NotConnectedException) as err:
             raise UpdateFailed(
                 f"Connection failed during update for zone {self.state.zn}"
             ) from err

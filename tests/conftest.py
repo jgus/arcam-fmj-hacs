@@ -5,7 +5,15 @@ from collections.abc import AsyncGenerator, Generator
 from contextlib import contextmanager
 from unittest.mock import AsyncMock, Mock, patch
 
-from arcam.fmj.client import Client, ResponsePacket
+from arcam.fmj.client import Client
+from arcam.fmj.commands import (
+    INCOMING_AUDIO_SAMPLE_RATE,
+    INCOMING_VIDEO_PARAMETERS,
+    MUTE,
+    POWER,
+    VOLUME,
+)
+from arcam.fmj.packets import ResponsePacket
 from arcam.fmj.state import State
 import pytest
 
@@ -82,14 +90,17 @@ def state_1_fixture(client: Mock) -> State:
     state = Mock(State)
     state.client = client
     state.zn = 1
-    state.get_power.return_value = True
-    state.get_volume.return_value = 0.0
+    state.command_values = {
+        INCOMING_AUDIO_SAMPLE_RATE: 0,
+        INCOMING_VIDEO_PARAMETERS: None,
+        MUTE: None,
+        POWER: True,
+        VOLUME: 0,
+    }
+    state.get.side_effect = state.command_values.get
     state.get_source.return_value = None
     state.get_source_list.return_value = []
     state.get_incoming_audio_format.return_value = (None, None)
-    state.get_incoming_video_parameters.return_value = None
-    state.get_incoming_audio_sample_rate.return_value = 0
-    state.get_mute.return_value = None
     state.get_decode_modes.return_value = []
     state.get_decode_mode.return_value = None
     state.__aenter__ = AsyncMock()
@@ -103,14 +114,17 @@ def state_2_fixture(client: Mock) -> State:
     state = Mock(State)
     state.client = client
     state.zn = 2
-    state.get_power.return_value = True
-    state.get_volume.return_value = 0.0
+    state.command_values = {
+        INCOMING_AUDIO_SAMPLE_RATE: 0,
+        INCOMING_VIDEO_PARAMETERS: None,
+        MUTE: None,
+        POWER: True,
+        VOLUME: 0,
+    }
+    state.get.side_effect = state.command_values.get
     state.get_source.return_value = None
     state.get_source_list.return_value = []
     state.get_incoming_audio_format.return_value = (None, None)
-    state.get_incoming_video_parameters.return_value = None
-    state.get_incoming_audio_sample_rate.return_value = 0
-    state.get_mute.return_value = None
     state.get_decode_modes.return_value = []
     state.get_decode_mode.return_value = None
     state.__aenter__ = AsyncMock()
