@@ -14,6 +14,7 @@ from arcam.fmj.commands import (
     DAB_STATION,
     DECODE_MODE_2CH,
     DLS_PDT,
+    FM_GENRE,
     MUTE,
     NETWORK_PLAYBACK_STATUS,
     POWER,
@@ -44,6 +45,7 @@ _LOGGER = logging.getLogger(__name__)
 
 ATTR_MEDIA_CODEC = "media_codec"
 ATTR_MEDIA_ENCODER = "media_encoder"
+ATTR_MEDIA_GENRE = "media_genre"
 ATTR_MEDIA_SAMPLE_RATE = "media_sample_rate"
 
 _NETWORK_SOURCES = frozenset({SourceCodes.NET, SourceCodes.USB, SourceCodes.NET_USB})
@@ -405,27 +407,34 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         if (source := self._state.get_source()) is None:
             return None
 
+        source_name = self.coordinator.input_name_for(source) or source.name
         if source is SourceCodes.BT:
             _, track = self._state.get_bluetooth_status()
             if track is not None:
                 value = track
             else:
-                value = source.name
+                value = source_name
         elif (
             now_playing := self._network_now_playing()
         ) is not None and now_playing.track is not None:
             value = now_playing.track
         elif channel := self.media_channel:
-            value = f"{source.name} - {channel}"
+            value = f"{source_name} - {channel}"
         else:
-            value = source.name
+            value = source_name
         return value
 
     @property
     @override
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return playback details."""
-        if self._state.get_source() is SourceCodes.BT:
+        source = self._state.get_source()
+        if source is SourceCodes.FM:
+            if (genre := self._state.get(FM_GENRE)) is None:
+                return None
+            return {ATTR_MEDIA_GENRE: genre}
+
+        if source is SourceCodes.BT:
             status, _ = self._state.get_bluetooth_status()
             if (codec := _BLUETOOTH_CODECS.get(status)) is None:
                 return None

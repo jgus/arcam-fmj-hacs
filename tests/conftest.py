@@ -78,9 +78,10 @@ def client_fixture() -> Generator[Mock]:
         listeners.remove(listener)
 
     @callback
-    def _notify_data_updated(zn=1):
+    def _notify_data_updated(zn=1, cc=None):
         packet = Mock(ResponsePacket)
         packet.zn = zn
+        packet.cc = cc
         for listener in listeners:
             listener(packet)
 
@@ -119,6 +120,7 @@ def _mock_state(client: Mock, zone: int, model: str | None) -> State:
     state.get_source.return_value = None
     state.get_source_list.return_value = []
     state.get_bluetooth_status.return_value = (None, None)
+    state.get_input_name.return_value = None
     state.get_incoming_audio_format.return_value = (None, None)
     state.get_now_playing.return_value = None
     state.get_decode_modes.return_value = []

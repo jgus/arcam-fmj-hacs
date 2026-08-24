@@ -7,8 +7,10 @@ import logging
 from typing import Any, override
 
 from arcam.fmj.client import Client
-from arcam.fmj.codecs import TemperatureSensor
+from arcam.fmj.codecs import SourceCodes, TemperatureSensor
 from arcam.fmj.commands import (
+    CURRENT_SOURCE,
+    INPUT_NAME,
     LIFTER_TEMPERATURE,
     OUTPUT_TEMPERATURE,
     SOFTWARE_VERSION,
@@ -69,6 +71,8 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
         self.state = State(client, zone)
         self.update_in_progress = False
         self.model: str | None = None
+        self._current_input_name: str | None = None
+        self._current_input_name_source: SourceCodes | None = None
         self._temperature_sensor_2_values: dict[ReadCommand[int], int | None] = {}
 
         device_name = config_entry.title
@@ -88,9 +92,10 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
 
     def supports_command(self, command: Command[Any]) -> bool:
         """Return whether the discovered model and zone support a command."""
-        if self.model is None:
+        model = self.model or self.state.model
+        if model is None:
             return False
-        if command.version is not None and self.model not in command.version:
+        if command.version is not None and model not in command.version:
             return False
         if self.state.zn != 1 and not command.flags & CommandFlags.ZONE_SUPPORT:
             return False
@@ -138,6 +143,12 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
         """Return a coordinator-polled secondary temperature."""
         return self._temperature_sensor_2_values.get(command)
 
+    def input_name_for(self, source: SourceCodes) -> str | None:
+        """Return the cached configured name for a source."""
+        if source is not self._current_input_name_source:
+            return None
+        return self._current_input_name
+
     async def _async_poll_temperature_sensor_2(
         self,
         command: ReadCommand[int],
@@ -154,12 +165,48 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
         else:
             self._temperature_sensor_2_values[command] = value
 
+    async def _async_update_current_input_name(self) -> None:
+        source = self.state.get_source()
+        if source is self._current_input_name_source:
+            return
+
+        self._current_input_name = None
+        if source is None:
+            self._current_input_name_source = None
+            return
+        if self.model is None and self.state.model is None:
+            return
+        if not self.supports_command(INPUT_NAME):
+            self._current_input_name_source = source
+            return
+
+        try:
+            input_name = await self.state.get_input_name()
+        except ResponseException as err:
+            _LOGGER.debug("Response error fetching input name: %s", err.ac)
+            return
+        except TimeoutError:
+            _LOGGER.error("Timeout fetching input name")
+            return
+
+        if self.state.get_source() is source:
+            self._current_input_name = input_name or None
+            self._current_input_name_source = source
+
+    async def _async_handle_source_change(self) -> None:
+        try:
+            await self._async_update_current_input_name()
+        except (ConnectionFailed, NotConnectedException):
+            pass
+        self.async_update_listeners()
+
     @override
     async def _async_update_data(self) -> None:
         """Fetch data for manual refresh."""
         try:
             self.update_in_progress = True
             await self.state.update()
+            await self._async_update_current_input_name()
             if (
                 self.state.zn == 1
                 and TemperatureSensor.SENSOR_2
@@ -195,6 +242,9 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
         ):
             return
 
+        if packet.cc == CURRENT_SOURCE.cc:
+            self.hass.async_create_task(self._async_handle_source_change())
+            return
         self.async_update_listeners()
 
     @asynccontextmanager

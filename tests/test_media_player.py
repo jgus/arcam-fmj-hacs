@@ -14,8 +14,10 @@ from arcam.fmj.codecs import (
     SourceCodes,
 )
 from arcam.fmj.commands import (
+    CURRENT_SOURCE,
     DAB_STATION,
     DLS_PDT,
+    FM_GENRE,
     MUTE,
     NETWORK_PLAYBACK_STATUS,
     POWER,
@@ -31,6 +33,7 @@ from syrupy.assertion import SnapshotAssertion
 from custom_components.arcam_fmj.media_player import (
     ATTR_MEDIA_CODEC,
     ATTR_MEDIA_ENCODER,
+    ATTR_MEDIA_GENRE,
     ATTR_MEDIA_SAMPLE_RATE,
     ArcamFmj,
 )
@@ -898,3 +901,109 @@ async def test_bluetooth_metadata_is_source_gated(
 
     assert data.attributes[ATTR_MEDIA_TITLE] == "PVR"
     assert ATTR_MEDIA_CODEC not in data.attributes
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_fm_genre_metadata_is_source_gated(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+) -> None:
+    """Test FM genre metadata follows the current source."""
+    state_1.get_source.return_value = SourceCodes.FM
+    state_1.command_values[FM_GENRE] = "Alternative"
+
+    fm_data = await update(hass, client, MOCK_ENTITY_ID)
+    assert fm_data.attributes[ATTR_MEDIA_GENRE] == "Alternative"
+
+    state_1.get_source.return_value = SourceCodes.PVR
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert ATTR_MEDIA_GENRE not in data.attributes
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_configured_input_name_is_cached_after_source_changes(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+) -> None:
+    """Test configured input names are fetched only after source changes."""
+    state_1.get_input_name.reset_mock()
+    state_1.get_source.return_value = SourceCodes.PVR
+    state_1.get_input_name.return_value = "Television"
+
+    client.notify_data_updated(cc=CURRENT_SOURCE.cc)
+    await hass.async_block_till_done()
+
+    data = hass.states.get(MOCK_ENTITY_ID)
+    assert data is not None
+    assert data.attributes[ATTR_MEDIA_TITLE] == "Television"
+    state_1.get_input_name.assert_awaited_once_with()
+
+    client.notify_data_updated(cc=CURRENT_SOURCE.cc)
+    await hass.async_block_till_done()
+    await update(hass, client, MOCK_ENTITY_ID)
+    state_1.get_input_name.assert_awaited_once_with()
+
+    state_1.get_source.return_value = SourceCodes.BD
+    state_1.get_input_name.return_value = "Blu-ray Player"
+    client.notify_data_updated(cc=CURRENT_SOURCE.cc)
+    await hass.async_block_till_done()
+
+    data = hass.states.get(MOCK_ENTITY_ID)
+    assert data is not None
+    assert data.attributes[ATTR_MEDIA_TITLE] == "Blu-ray Player"
+    assert state_1.get_input_name.await_count == 2
+
+    state_1.get_source.return_value = SourceCodes.FM
+    state_1.command_values[RDS_INFORMATION] = "KEXP"
+    state_1.get_input_name.return_value = "Radio"
+    client.notify_data_updated(cc=CURRENT_SOURCE.cc)
+    await hass.async_block_till_done()
+
+    data = hass.states.get(MOCK_ENTITY_ID)
+    assert data is not None
+    assert data.attributes[ATTR_MEDIA_TITLE] == "Radio - KEXP"
+    assert state_1.get_input_name.await_count == 3
+
+
+@pytest.mark.parametrize("device_model", ["SA30"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_configured_input_name_model_support(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+) -> None:
+    """Test configured input names are fetched only on supported models."""
+    state_1.get_input_name.reset_mock()
+    state_1.get_source.return_value = SourceCodes.PVR
+
+    client.notify_data_updated(cc=CURRENT_SOURCE.cc)
+    await hass.async_block_till_done()
+
+    data = hass.states.get(MOCK_ENTITY_ID)
+    assert data is not None
+    assert data.attributes[ATTR_MEDIA_TITLE] == "PVR"
+    state_1.get_input_name.assert_not_awaited()
+
+
+@pytest.mark.usefixtures("player_setup")
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_configured_input_name_zone_support(
+    hass: HomeAssistant,
+    client: Mock,
+    state_2: State,
+) -> None:
+    """Test configured input names are fetched only in supported zones."""
+    entity_id = f"{MOCK_ENTITY_ID}_zone_2"
+    state_2.get_input_name.reset_mock()
+    state_2.get_source.return_value = SourceCodes.PVR
+
+    client.notify_data_updated(zn=2, cc=CURRENT_SOURCE.cc)
+    await hass.async_block_till_done()
+
+    data = hass.states.get(entity_id)
+    assert data is not None
+    assert data.attributes[ATTR_MEDIA_TITLE] == "PVR"
+    state_2.get_input_name.assert_not_awaited()
