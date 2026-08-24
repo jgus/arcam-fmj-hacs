@@ -10,6 +10,7 @@ from arcam.fmj.codecs import (
     DolbyAudioMode,
     HdmiOutput,
     ImaxEnhancedMode,
+    RoomEqMode,
     VideoFilmMode,
     VideoNoiseReduction,
     VideoSelection,
@@ -20,6 +21,8 @@ from arcam.fmj.commands import (
     DISPLAY_BRIGHTNESS,
     DOLBY_AUDIO,
     IMAX_ENHANCED,
+    ROOM_EQUALIZATION,
+    ROOM_EQ_NAMES,
     VIDEO_FILM_MODE,
     VIDEO_MPEG_NOISE_REDUCTION,
     VIDEO_NOISE_REDUCTION,
@@ -31,9 +34,11 @@ from arcam.fmj.models import IntOrTypeEnum
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .const import DOMAIN
 from .coordinator import ArcamFmjConfigEntry, ArcamFmjCoordinator
 from .entity import (
     ArcamFmjCommandEntityDescription,
@@ -130,6 +135,14 @@ SELECTS: tuple[ArcamFmjSelectEntityDescription, ...] = (
     ),
 )
 
+ROOM_EQUALIZATION_DESCRIPTION = ArcamFmjSelectEntityDescription(
+    key="room_equalization",
+    command=ROOM_EQUALIZATION,
+    translation_key="room_equalization",
+    entity_category=EntityCategory.CONFIG,
+    enum_type=RoomEqMode,
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -137,11 +150,23 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Arcam FMJ selects from a config entry."""
-    async_add_entities(
+    coordinators = config_entry.runtime_data.coordinators
+    entities: list[ArcamFmjSelectEntity] = [
         ArcamFmjSelectEntity(coordinator, description)
         for coordinator in config_entry.runtime_data.coordinators.values()
         for description in supported_entity_descriptions(coordinator, SELECTS)
+    ]
+    room_eq_names_coordinator = coordinators[1]
+    entities.extend(
+        ArcamFmjRoomEqSelectEntity(
+            coordinator,
+            ROOM_EQUALIZATION_DESCRIPTION,
+            room_eq_names_coordinator,
+        )
+        for coordinator in coordinators.values()
+        if coordinator.supports_command(ROOM_EQUALIZATION)
     )
+    async_add_entities(entities)
 
 
 class ArcamFmjSelectEntity(ArcamFmjEntity, SelectEntity):
@@ -174,4 +199,87 @@ class ArcamFmjSelectEntity(ArcamFmjEntity, SelectEntity):
         await self.coordinator.state.set(
             self.entity_description.command, self._option_values[option]
         )
+        self.async_write_ha_state()
+
+
+class ArcamFmjRoomEqSelectEntity(ArcamFmjSelectEntity):
+    """Representation of an Arcam FMJ Room EQ select."""
+
+    def __init__(
+        self,
+        coordinator: ArcamFmjCoordinator,
+        description: ArcamFmjSelectEntityDescription,
+        room_eq_names_coordinator: ArcamFmjCoordinator,
+    ) -> None:
+        """Initialize the Room EQ select."""
+        super().__init__(coordinator, description)
+        self._room_eq_names_coordinator = room_eq_names_coordinator
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to Room EQ name updates."""
+        await super().async_added_to_hass()
+        if self._room_eq_names_coordinator is not self.coordinator:
+            self.async_on_remove(
+                self._room_eq_names_coordinator.async_add_listener(
+                    self._handle_room_eq_names_update
+                )
+            )
+
+    @callback
+    def _handle_room_eq_names_update(self) -> None:
+        self.async_write_ha_state()
+
+    def _room_eq_option_values(self) -> dict[str, RoomEqMode]:
+        names = self._room_eq_names_coordinator.state.get(ROOM_EQ_NAMES) or []
+        option_values = {"off": RoomEqMode.OFF}
+        for index, mode in enumerate((RoomEqMode.EQ1, RoomEqMode.EQ2, RoomEqMode.EQ3)):
+            option = (
+                names[index]
+                if index < len(names) and names[index]
+                else mode.name.lower()
+            )
+            if option in option_values:
+                option = f"{option} ({index + 1})"
+            option_values[option] = mode
+        return option_values
+
+    @property
+    @override
+    def options(self) -> list[str]:
+        """Return selectable Room EQ options and any read-only current state."""
+        options = list(self._room_eq_option_values())
+        if self.coordinator.state.get(ROOM_EQUALIZATION) is RoomEqMode.NOT_CALCULATED:
+            options.append("not_calculated")
+        return options
+
+    @property
+    @override
+    def current_option(self) -> str | None:
+        """Return the selected Room EQ option."""
+        value = self.coordinator.state.get(ROOM_EQUALIZATION)
+        if value is None:
+            return None
+        if value is RoomEqMode.NOT_CALCULATED:
+            return "not_calculated"
+        return next(
+            (
+                option
+                for option, option_value in self._room_eq_option_values().items()
+                if option_value is value
+            ),
+            None,
+        )
+
+    @convert_exception
+    @override
+    async def async_select_option(self, option: str) -> None:
+        """Select a Room EQ option."""
+        option_values = self._room_eq_option_values()
+        if option not in option_values:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="room_eq_state_read_only",
+                translation_placeholders={"state": option},
+            )
+        await self.coordinator.state.set(ROOM_EQUALIZATION, option_values[option])
         self.async_write_ha_state()

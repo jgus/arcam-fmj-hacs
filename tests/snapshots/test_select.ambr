@@ -306,6 +306,69 @@
     'state': 'unknown',
   })
 # ---
+# name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_room_equalization-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'eq1',
+        'eq2',
+        'eq3',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_room_equalization',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Room equalization',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Room equalization',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'room_equalization',
+    'unique_id': '456789abcdef-1-room_equalization',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_room_equalization-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Room equalization',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'eq1',
+        'eq2',
+        'eq3',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_room_equalization',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_zone_2_dolby_audio_mode-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -424,6 +487,69 @@
     }),
     'context': <ANY>,
     'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_dynamic_range_compression',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_zone_2_room_equalization-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'eq1',
+        'eq2',
+        'eq3',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_room_equalization',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Room equalization',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Room equalization',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'room_equalization',
+    'unique_id': '456789abcdef-2-room_equalization',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_zone_2_room_equalization-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Zone 2 Room equalization',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'eq1',
+        'eq2',
+        'eq3',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_room_equalization',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
@@ -804,6 +930,69 @@
     'state': 'unknown',
   })
 # ---
+# name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_room_equalization-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'eq1',
+        'eq2',
+        'eq3',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_room_equalization',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Room equalization',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Room equalization',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'room_equalization',
+    'unique_id': '456789abcdef-1-room_equalization',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_room_equalization-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Room equalization',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'eq1',
+        'eq2',
+        'eq3',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_room_equalization',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_video_film_mode-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -1040,6 +1229,69 @@
     }),
     'context': <ANY>,
     'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_dynamic_range_compression',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_zone_2_room_equalization-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'eq1',
+        'eq2',
+        'eq3',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_room_equalization',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Room equalization',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Room equalization',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'room_equalization',
+    'unique_id': '456789abcdef-2-room_equalization',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_zone_2_room_equalization-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Zone 2 Room equalization',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'off',
+        'eq1',
+        'eq2',
+        'eq3',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_room_equalization',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

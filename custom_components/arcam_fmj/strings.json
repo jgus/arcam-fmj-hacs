@@ -163,6 +163,16 @@
           "on": "On"
         }
       },
+      "room_equalization": {
+        "name": "Room equalization",
+        "state": {
+          "eq1": "EQ 1",
+          "eq2": "EQ 2",
+          "eq3": "EQ 3",
+          "not_calculated": "Not calculated",
+          "off": "Off"
+        }
+      },
       "video_film_mode": {
         "name": "Video film mode",
         "state": {
@@ -365,6 +375,9 @@
   "exceptions": {
     "connection_failed": {
       "message": "Connection failed to the device."
+    },
+    "room_eq_state_read_only": {
+      "message": "Room EQ state {state} is read-only."
     },
     "unsupported_media": {
       "message": "Unsupported media: {media}."

@@ -94,6 +94,9 @@
       "imax_enhanced": {
         "default": "mdi:movie-open-play"
       },
+      "room_equalization": {
+        "default": "mdi:tune-vertical"
+      },
       "video_film_mode": {
         "default": "mdi:filmstrip"
       },

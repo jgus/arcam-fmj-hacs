@@ -10,6 +10,7 @@ from arcam.fmj.codecs import (
     DolbyAudioMode,
     HdmiOutput,
     ImaxEnhancedMode,
+    RoomEqMode,
     VideoFilmMode,
     VideoNoiseReduction,
     VideoSelection,
@@ -20,6 +21,8 @@ from arcam.fmj.commands import (
     DISPLAY_BRIGHTNESS,
     DOLBY_AUDIO,
     IMAX_ENHANCED,
+    ROOM_EQUALIZATION,
+    ROOM_EQ_NAMES,
     VIDEO_FILM_MODE,
     VIDEO_MPEG_NOISE_REDUCTION,
     VIDEO_NOISE_REDUCTION,
@@ -39,6 +42,7 @@ from homeassistant.components.select import (
 )
 from homeassistant.const import ATTR_ENTITY_ID, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 
 from pytest_homeassistant_custom_component.common import (
@@ -50,6 +54,7 @@ ENTITY_IDS = {
     DISPLAY_BRIGHTNESS: "select.arcam_fmj_127_0_0_1_front_panel_display_brightness",
     VIDEO_SELECTION: "select.arcam_fmj_127_0_0_1_legacy_video_selection",
     IMAX_ENHANCED: "select.arcam_fmj_127_0_0_1_imax_enhanced_mode",
+    ROOM_EQUALIZATION: "select.arcam_fmj_127_0_0_1_room_equalization",
     DOLBY_AUDIO: "select.arcam_fmj_127_0_0_1_dolby_audio_mode",
     COMPRESSION: "select.arcam_fmj_127_0_0_1_dynamic_range_compression",
     VIDEO_FILM_MODE: "select.arcam_fmj_127_0_0_1_video_film_mode",
@@ -68,6 +73,7 @@ AVR450_COMMANDS = {
     VIDEO_NOISE_REDUCTION,
     VIDEO_MPEG_NOISE_REDUCTION,
     VIDEO_OUTPUT_SWITCHING,
+    ROOM_EQUALIZATION,
 }
 AVR20_COMMANDS = {
     DISPLAY_BRIGHTNESS,
@@ -75,6 +81,7 @@ AVR20_COMMANDS = {
     DOLBY_AUDIO,
     COMPRESSION,
     VIDEO_OUTPUT_SWITCHING,
+    ROOM_EQUALIZATION,
 }
 SA20_COMMANDS = {DISPLAY_BRIGHTNESS, AUTO_SHUTDOWN_CONTROL}
 
@@ -142,6 +149,87 @@ async def test_read_and_write(
     state_1.set.assert_awaited_once_with(command, value)
 
 
+@pytest.mark.parametrize("device_model", ["AVR20"], indirect=True)
+@pytest.mark.usefixtures("entity_registry_enabled_by_default", "player_setup")
+async def test_room_equalization_names(
+    hass: HomeAssistant,
+    state_1: State,
+    state_2: State,
+    client: Mock,
+) -> None:
+    """Test configured Room EQ names and the read-only state."""
+    state_1.command_values.update(
+        {
+            ROOM_EQ_NAMES: ["Movie", "Music", "Night"],
+            ROOM_EQUALIZATION: RoomEqMode.EQ2,
+        }
+    )
+    state_2.command_values[ROOM_EQUALIZATION] = RoomEqMode.EQ3
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    entity_id = ENTITY_IDS[ROOM_EQUALIZATION]
+    entity_state = hass.states.get(entity_id)
+    assert entity_state is not None
+    assert entity_state.state == "Music"
+    assert entity_state.attributes["options"] == ["off", "Movie", "Music", "Night"]
+
+    zone_2_state = hass.states.get(
+        "select.arcam_fmj_127_0_0_1_zone_2_room_equalization"
+    )
+    assert zone_2_state is not None
+    assert zone_2_state.state == "Night"
+
+    await hass.services.async_call(
+        SELECT_DOMAIN,
+        SERVICE_SELECT_OPTION,
+        {ATTR_ENTITY_ID: entity_id, ATTR_OPTION: "Movie"},
+        blocking=True,
+    )
+    state_1.set.assert_awaited_once_with(ROOM_EQUALIZATION, RoomEqMode.EQ1)
+
+    state_1.command_values[ROOM_EQUALIZATION] = RoomEqMode.NOT_CALCULATED
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(entity_id)
+    assert entity_state is not None
+    assert entity_state.state == "not_calculated"
+    assert entity_state.attributes["options"] == [
+        "off",
+        "Movie",
+        "Music",
+        "Night",
+        "not_calculated",
+    ]
+
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            SELECT_DOMAIN,
+            SERVICE_SELECT_OPTION,
+            {ATTR_ENTITY_ID: entity_id, ATTR_OPTION: "not_calculated"},
+            blocking=True,
+        )
+
+
+@pytest.mark.parametrize("device_model", ["AVR450"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_room_equalization_fallback_names(
+    hass: HomeAssistant,
+    state_1: State,
+    client: Mock,
+) -> None:
+    """Test Room EQ fallback names when configured names are unavailable."""
+    state_1.command_values[ROOM_EQUALIZATION] = RoomEqMode.EQ1
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(ENTITY_IDS[ROOM_EQUALIZATION])
+    assert entity_state is not None
+    assert entity_state.state == "eq1"
+    assert entity_state.attributes["options"] == ["off", "eq1", "eq2", "eq3"]
+
+
 @pytest.mark.parametrize(
     ("device_model", "expected_commands"),
     [
@@ -207,6 +295,7 @@ async def test_zone_support(hass: HomeAssistant) -> None:
     entity_ids = {state.entity_id for state in hass.states.async_all(SELECT_DOMAIN)}
     assert "select.arcam_fmj_127_0_0_1_zone_2_dolby_audio_mode" in entity_ids
     assert "select.arcam_fmj_127_0_0_1_zone_2_dynamic_range_compression" in entity_ids
+    assert "select.arcam_fmj_127_0_0_1_zone_2_room_equalization" in entity_ids
     assert not any(
         entity_id.startswith(
             "select.arcam_fmj_127_0_0_1_zone_2_front_panel_display_brightness"
