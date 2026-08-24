@@ -4,9 +4,15 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 import logging
-from typing import override
+from typing import Any, override
 
 from arcam.fmj.client import Client
+from arcam.fmj.commands import (
+    SOFTWARE_VERSION,
+    SYSTEM_MODEL,
+    Command,
+    CommandFlags,
+)
 from arcam.fmj.errors import ConnectionFailed, NotConnectedException
 from arcam.fmj.packets import AmxDuetResponse, ResponsePacket
 from arcam.fmj.state import State
@@ -54,6 +60,7 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
         self.client = client
         self.state = State(client, zone)
         self.update_in_progress = False
+        self.model: str | None = None
 
         device_name = config_entry.title
         unique_id = config_entry.unique_id or config_entry.entry_id
@@ -66,10 +73,57 @@ class ArcamFmjCoordinator(DataUpdateCoordinator[None]):
         self.device_info = DeviceInfo(
             identifiers={(DOMAIN, unique_id_device)},
             manufacturer="Arcam",
-            model="Arcam FMJ AVR",
             name=device_name,
         )
         self.zone_unique_id = f"{unique_id}-{zone}"
+
+    def supports_command(self, command: Command[Any]) -> bool:
+        """Return whether the discovered model and zone support a command."""
+        if self.model is None:
+            return False
+        if command.version is not None and self.model not in command.version:
+            return False
+        if self.state.zn != 1 and not command.flags & CommandFlags.ZONE_SUPPORT:
+            return False
+        return self.state.is_command_supported(command)
+
+    def set_device_metadata(
+        self,
+        model: str,
+        revision: str | None,
+        software_version: str | None,
+        system_model: str | None,
+    ) -> None:
+        """Set device information discovered before platform setup."""
+        self.model = model
+        self.device_info.update(
+            model=model,
+            hw_version=revision,
+            sw_version=software_version,
+        )
+        if system_model is not None:
+            self.device_info["model_id"] = system_model
+
+    def discovered_device_metadata(
+        self,
+    ) -> tuple[str, str | None, str | None, str | None]:
+        """Return device metadata from AMX discovery and typed commands."""
+        model = self.state.model
+        if model is None:
+            raise UpdateFailed("AMX device model unavailable")
+
+        self.model = model
+        system_model = (
+            self.state.get(SYSTEM_MODEL)
+            if self.supports_command(SYSTEM_MODEL)
+            else None
+        )
+        return (
+            model,
+            self.state.revision,
+            self.state.get(SOFTWARE_VERSION),
+            system_model,
+        )
 
     @override
     async def _async_update_data(self) -> None:

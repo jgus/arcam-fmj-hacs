@@ -5,7 +5,9 @@ from typing import Any, override
 
 from arcam.fmj.codecs import SourceCodes
 from arcam.fmj.commands import (
+    CURRENT_SOURCE,
     DAB_STATION,
+    DECODE_MODE_2CH,
     DLS_PDT,
     MUTE,
     POWER,
@@ -48,7 +50,11 @@ async def async_setup_entry(
     coordinators = config_entry.runtime_data.coordinators
 
     async_add_entities(
-        [ArcamFmj(coordinators[zone]) for zone in (1, 2)],
+        [
+            ArcamFmj(coordinator)
+            for coordinator in coordinators.values()
+            if coordinator.supports_command(POWER)
+        ],
     )
 
 
@@ -59,18 +65,35 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         """Initialize device."""
         super().__init__(coordinator)
         self._state = coordinator.state
-        self._attr_supported_features = (
-            MediaPlayerEntityFeature.SELECT_SOURCE
-            | MediaPlayerEntityFeature.PLAY_MEDIA
-            | MediaPlayerEntityFeature.BROWSE_MEDIA
-            | MediaPlayerEntityFeature.VOLUME_SET
-            | MediaPlayerEntityFeature.VOLUME_MUTE
-            | MediaPlayerEntityFeature.VOLUME_STEP
-            | MediaPlayerEntityFeature.TURN_OFF
-            | MediaPlayerEntityFeature.TURN_ON
-        )
-        if self._state.zn == 1:
-            self._attr_supported_features |= MediaPlayerEntityFeature.SELECT_SOUND_MODE
+
+    @property
+    @override
+    def supported_features(self) -> MediaPlayerEntityFeature:
+        """Return features supported by the discovered model, zone, and source."""
+        features = MediaPlayerEntityFeature(0)
+        if self.coordinator.supports_command(POWER):
+            features |= (
+                MediaPlayerEntityFeature.TURN_OFF | MediaPlayerEntityFeature.TURN_ON
+            )
+        if self.coordinator.supports_command(CURRENT_SOURCE):
+            features |= MediaPlayerEntityFeature.SELECT_SOURCE
+        if self.coordinator.supports_command(VOLUME):
+            features |= (
+                MediaPlayerEntityFeature.VOLUME_SET
+                | MediaPlayerEntityFeature.VOLUME_STEP
+            )
+        if self.coordinator.supports_command(MUTE):
+            features |= MediaPlayerEntityFeature.VOLUME_MUTE
+        if self.coordinator.supports_command(
+            TUNER_PRESET
+        ) and self._state.supported_on_source(TUNER_PRESET):
+            features |= (
+                MediaPlayerEntityFeature.PLAY_MEDIA
+                | MediaPlayerEntityFeature.BROWSE_MEDIA
+            )
+        if self.coordinator.supports_command(DECODE_MODE_2CH):
+            features |= MediaPlayerEntityFeature.SELECT_SOUND_MODE
+        return features
 
     @property
     @override

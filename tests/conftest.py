@@ -11,6 +11,8 @@ from arcam.fmj.commands import (
     INCOMING_VIDEO_PARAMETERS,
     MUTE,
     POWER,
+    SOFTWARE_VERSION,
+    SYSTEM_MODEL,
     VOLUME,
 )
 from arcam.fmj.packets import ResponsePacket
@@ -35,6 +37,14 @@ MOCK_UUID = "456789abcdef"
 MOCK_UDN = f"uuid:01234567-89ab-cdef-0123-{MOCK_UUID}"
 MOCK_NAME = f"{DEFAULT_NAME} ({MOCK_HOST})"
 MOCK_CONFIG_ENTRY = {CONF_HOST: MOCK_HOST, CONF_PORT: MOCK_PORT}
+MOCK_DEVICE_REVISION = "1.2.3"
+MOCK_SOFTWARE_VERSION = "4.5"
+
+
+@pytest.fixture(name="device_model")
+def device_model_fixture(request: pytest.FixtureRequest) -> str | None:
+    """Get the AMX device model."""
+    return getattr(request, "param", "AVR20")
 
 
 @pytest.fixture(name="client")
@@ -51,10 +61,15 @@ def client_fixture() -> Generator[Mock]:
         client.connected = True
 
     async def _process():
-        result = await queue.get()
-        client.connected = False
+        try:
+            result = await queue.get()
+        finally:
+            client.connected = False
         if isinstance(result, BaseException):
             raise result
+
+    async def _stop():
+        client.connected = False
 
     @contextmanager
     def _listen(listener):
@@ -74,6 +89,7 @@ def client_fixture() -> Generator[Mock]:
         queue.put_nowait(exception)
 
     client.start.side_effect = _start
+    client.stop.side_effect = _stop
     client.process.side_effect = _process
     client.listen.side_effect = _listen
     client.notify_data_updated = _notify_data_updated
@@ -84,17 +100,19 @@ def client_fixture() -> Generator[Mock]:
     queue.put_nowait(CancelledError())
 
 
-@pytest.fixture(name="state_1")
-def state_1_fixture(client: Mock) -> State:
-    """Get a mocked state."""
+def _mock_state(client: Mock, zone: int, model: str | None) -> State:
     state = Mock(State)
     state.client = client
-    state.zn = 1
+    state.zn = zone
+    state.model = model
+    state.revision = MOCK_DEVICE_REVISION
     state.command_values = {
         INCOMING_AUDIO_SAMPLE_RATE: 0,
         INCOMING_VIDEO_PARAMETERS: None,
         MUTE: None,
         POWER: True,
+        SOFTWARE_VERSION: MOCK_SOFTWARE_VERSION,
+        SYSTEM_MODEL: f"{model} system model",
         VOLUME: 0,
     }
     state.get.side_effect = state.command_values.get
@@ -103,33 +121,29 @@ def state_1_fixture(client: Mock) -> State:
     state.get_incoming_audio_format.return_value = (None, None)
     state.get_decode_modes.return_value = []
     state.get_decode_mode.return_value = None
-    state.__aenter__ = AsyncMock()
+    state.is_command_supported.side_effect = lambda command: (
+        command.version is None or model in command.version
+    )
+    state.supported_on_source.side_effect = lambda command: (
+        command.sources is None
+        or state.get_source() is None
+        or state.get_source() in command.sources
+    )
+    state.__aenter__ = AsyncMock(return_value=state)
     state.__aexit__ = AsyncMock()
     return state
+
+
+@pytest.fixture(name="state_1")
+def state_1_fixture(client: Mock, device_model: str | None) -> State:
+    """Get a mocked state."""
+    return _mock_state(client, 1, device_model)
 
 
 @pytest.fixture(name="state_2")
-def state_2_fixture(client: Mock) -> State:
+def state_2_fixture(client: Mock, device_model: str | None) -> State:
     """Get a mocked state."""
-    state = Mock(State)
-    state.client = client
-    state.zn = 2
-    state.command_values = {
-        INCOMING_AUDIO_SAMPLE_RATE: 0,
-        INCOMING_VIDEO_PARAMETERS: None,
-        MUTE: None,
-        POWER: True,
-        VOLUME: 0,
-    }
-    state.get.side_effect = state.command_values.get
-    state.get_source.return_value = None
-    state.get_source_list.return_value = []
-    state.get_incoming_audio_format.return_value = (None, None)
-    state.get_decode_modes.return_value = []
-    state.get_decode_mode.return_value = None
-    state.__aenter__ = AsyncMock()
-    state.__aexit__ = AsyncMock()
-    return state
+    return _mock_state(client, 2, device_model)
 
 
 @pytest.fixture(name="mock_config_entry")

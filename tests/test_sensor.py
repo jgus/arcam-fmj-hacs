@@ -138,3 +138,19 @@ async def test_sensor_enum_unknown(
     assert _get("incoming_audio_configuration") == "unknown"
     assert _get("incoming_video_aspect_ratio") == "unknown"
     assert _get("incoming_video_colorspace") == "unknown"
+
+
+@pytest.mark.parametrize("device_model", ["SA30"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_sensor_model_support(hass: HomeAssistant) -> None:
+    """Test sensors are created only for supported models."""
+    assert (
+        hass.states.get("sensor.arcam_fmj_127_0_0_1_incoming_audio_sample_rate")
+        is not None
+    )
+    assert (
+        hass.states.get(
+            "sensor.arcam_fmj_127_0_0_1_incoming_video_horizontal_resolution"
+        )
+        is None
+    )

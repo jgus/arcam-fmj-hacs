@@ -44,6 +44,7 @@ from homeassistant.components.media_player import (
     SERVICE_VOLUME_MUTE,
     SERVICE_VOLUME_SET,
     SERVICE_VOLUME_UP,
+    MediaPlayerEntityFeature,
     MediaType,
 )
 from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, Platform
@@ -76,6 +77,40 @@ async def test_setup(
 ) -> None:
     """Test setup creates expected entities."""
     await snapshot_platform(hass, entity_registry, snapshot, mock_config_entry.entry_id)
+
+
+@pytest.mark.parametrize("device_model", ["SA30"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_supported_features_by_model(hass: HomeAssistant) -> None:
+    """Test media player features use command model metadata."""
+    state = hass.states.get(MOCK_ENTITY_ID)
+    assert state is not None
+    features = MediaPlayerEntityFeature(state.attributes["supported_features"])
+    assert features & MediaPlayerEntityFeature.SELECT_SOURCE
+    assert features & MediaPlayerEntityFeature.VOLUME_SET
+    assert features & MediaPlayerEntityFeature.VOLUME_MUTE
+    assert not features & MediaPlayerEntityFeature.PLAY_MEDIA
+    assert not features & MediaPlayerEntityFeature.SELECT_SOUND_MODE
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_source_gated_features(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+) -> None:
+    """Test source-specific controls are unavailable outside their source."""
+    state_1.get_source.return_value = SourceCodes.DAB
+    state = await update(hass, client, MOCK_ENTITY_ID)
+    features = MediaPlayerEntityFeature(state.attributes["supported_features"])
+    assert not features & MediaPlayerEntityFeature.PLAY_MEDIA
+    assert not features & MediaPlayerEntityFeature.BROWSE_MEDIA
+
+    state_1.get_source.return_value = SourceCodes.FM
+    state = await update(hass, client, MOCK_ENTITY_ID)
+    features = MediaPlayerEntityFeature(state.attributes["supported_features"])
+    assert features & MediaPlayerEntityFeature.PLAY_MEDIA
+    assert features & MediaPlayerEntityFeature.BROWSE_MEDIA
 
 
 @pytest.mark.usefixtures("player_setup")

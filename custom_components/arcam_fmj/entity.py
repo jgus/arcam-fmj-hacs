@@ -1,10 +1,14 @@
 """Base entity for Arcam FMJ integration."""
 
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Iterable, Iterator
+from dataclasses import dataclass
 import functools
+import logging
 from typing import Any, override
 
+from arcam.fmj.commands import Command
 from arcam.fmj.errors import ConnectionFailed, NotConnectedException
+from arcam.fmj.models import IntOrTypeEnum
 
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import EntityDescription
@@ -12,6 +16,48 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import ArcamFmjCoordinator
+
+_LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, kw_only=True)
+class ArcamFmjCommandEntityDescription(EntityDescription):
+    """Associates an entity description with an Arcam command."""
+
+    command: Command[Any]
+
+
+def enum_options(value: type[IntOrTypeEnum]) -> list[str]:
+    """Return Home Assistant options for known protocol enum values."""
+    return [
+        member.name.lower() for member in value if not member.name.startswith("CODE_")
+    ]
+
+
+def enum_value(value: IntOrTypeEnum | None) -> str | None:
+    """Convert a protocol enum value to a Home Assistant state."""
+    if value is None:
+        return None
+
+    if value.name.startswith("CODE_"):
+        _LOGGER.debug("Undefined enum value %s ignored", value)
+        return None
+
+    return value.name.lower()
+
+
+def supported_entity_descriptions[
+    _Description: ArcamFmjCommandEntityDescription,
+](
+    coordinator: ArcamFmjCoordinator,
+    descriptions: Iterable[_Description],
+) -> Iterator[_Description]:
+    """Iterate entity descriptions supported by a coordinator."""
+    return (
+        description
+        for description in descriptions
+        if coordinator.supports_command(description.command)
+    )
 
 
 def convert_exception[**_P, _R](
@@ -49,9 +95,20 @@ class ArcamFmjEntity(CoordinatorEntity[ArcamFmjCoordinator]):
         if description is not None:
             self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
             self.entity_description = description
+        self._command = (
+            description.command
+            if isinstance(description, ArcamFmjCommandEntityDescription)
+            else None
+        )
 
     @property
     @override
     def available(self) -> bool:
         """Return if entity is available."""
-        return super().available and self.coordinator.client.connected
+        if not super().available or not self.coordinator.client.connected:
+            return False
+        if self._command is None:
+            return True
+        return self.coordinator.supports_command(
+            self._command
+        ) and self.coordinator.state.supported_on_source(self._command)

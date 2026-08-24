@@ -2,7 +2,6 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-import logging
 from typing import override
 
 from arcam.fmj.codecs import (
@@ -13,9 +12,9 @@ from arcam.fmj.codecs import (
 )
 from arcam.fmj.commands import (
     INCOMING_AUDIO_SAMPLE_RATE,
+    INCOMING_AUDIO_FORMAT,
     INCOMING_VIDEO_PARAMETERS,
 )
-from arcam.fmj.models import IntOrTypeEnum
 from arcam.fmj.state import State
 
 from homeassistant.components.sensor import (
@@ -29,33 +28,22 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import ArcamFmjConfigEntry
-from .entity import ArcamFmjEntity
-
-_LOGGER = logging.getLogger(__name__)
+from .entity import (
+    ArcamFmjCommandEntityDescription,
+    ArcamFmjEntity,
+    enum_options,
+    enum_value,
+    supported_entity_descriptions,
+)
 
 # Read-only, coordinator-driven entities; no per-entity I/O to bound.
 PARALLEL_UPDATES = 0
 
 
-def _enum_options(value: type[IntOrTypeEnum]) -> list[str]:
-    return [
-        member.name.lower() for member in value if not member.name.startswith("CODE_")
-    ]
-
-
-def _enum_value(value: IntOrTypeEnum | None) -> str | None:
-    if value is None:
-        return None
-
-    if value.name.startswith("CODE_"):
-        _LOGGER.debug("Undefined enum value %s ignored", value)
-        return None
-
-    return value.name.lower()
-
-
 @dataclass(frozen=True, kw_only=True)
-class ArcamFmjSensorEntityDescription(SensorEntityDescription):
+class ArcamFmjSensorEntityDescription(
+    ArcamFmjCommandEntityDescription, SensorEntityDescription
+):
     """Describes an Arcam FMJ sensor entity."""
 
     value_fn: Callable[[State], int | float | str | None]
@@ -64,6 +52,7 @@ class ArcamFmjSensorEntityDescription(SensorEntityDescription):
 SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
     ArcamFmjSensorEntityDescription(
         key="incoming_video_horizontal_resolution",
+        command=INCOMING_VIDEO_PARAMETERS,
         translation_key="incoming_video_horizontal_resolution",
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
@@ -77,6 +66,7 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
     ),
     ArcamFmjSensorEntityDescription(
         key="incoming_video_vertical_resolution",
+        command=INCOMING_VIDEO_PARAMETERS,
         translation_key="incoming_video_vertical_resolution",
         entity_category=EntityCategory.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
@@ -90,6 +80,7 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
     ),
     ArcamFmjSensorEntityDescription(
         key="incoming_video_refresh_rate",
+        command=INCOMING_VIDEO_PARAMETERS,
         translation_key="incoming_video_refresh_rate",
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.FREQUENCY,
@@ -104,46 +95,51 @@ SENSORS: tuple[ArcamFmjSensorEntityDescription, ...] = (
     ),
     ArcamFmjSensorEntityDescription(
         key="incoming_video_aspect_ratio",
+        command=INCOMING_VIDEO_PARAMETERS,
         translation_key="incoming_video_aspect_ratio",
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.ENUM,
-        options=_enum_options(IncomingVideoAspectRatio),
+        options=enum_options(IncomingVideoAspectRatio),
         value_fn=lambda state: (
-            _enum_value(vp.aspect_ratio)
+            enum_value(vp.aspect_ratio)
             if (vp := state.get(INCOMING_VIDEO_PARAMETERS)) is not None
             else None
         ),
     ),
     ArcamFmjSensorEntityDescription(
         key="incoming_video_colorspace",
+        command=INCOMING_VIDEO_PARAMETERS,
         translation_key="incoming_video_colorspace",
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.ENUM,
-        options=_enum_options(IncomingVideoColorspace),
+        options=enum_options(IncomingVideoColorspace),
         value_fn=lambda state: (
-            _enum_value(vp.colorspace)
+            enum_value(vp.colorspace)
             if (vp := state.get(INCOMING_VIDEO_PARAMETERS)) is not None
             else None
         ),
     ),
     ArcamFmjSensorEntityDescription(
         key="incoming_audio_format",
+        command=INCOMING_AUDIO_FORMAT,
         translation_key="incoming_audio_format",
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.ENUM,
-        options=_enum_options(IncomingAudioFormat),
-        value_fn=lambda state: _enum_value(state.get_incoming_audio_format()[0]),
+        options=enum_options(IncomingAudioFormat),
+        value_fn=lambda state: enum_value(state.get_incoming_audio_format()[0]),
     ),
     ArcamFmjSensorEntityDescription(
         key="incoming_audio_config",
+        command=INCOMING_AUDIO_FORMAT,
         translation_key="incoming_audio_config",
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.ENUM,
-        options=_enum_options(IncomingAudioConfig),
-        value_fn=lambda state: _enum_value(state.get_incoming_audio_format()[1]),
+        options=enum_options(IncomingAudioConfig),
+        value_fn=lambda state: enum_value(state.get_incoming_audio_format()[1]),
     ),
     ArcamFmjSensorEntityDescription(
         key="incoming_audio_sample_rate",
+        command=INCOMING_AUDIO_SAMPLE_RATE,
         translation_key="incoming_audio_sample_rate",
         entity_category=EntityCategory.DIAGNOSTIC,
         device_class=SensorDeviceClass.FREQUENCY,
@@ -170,7 +166,8 @@ async def async_setup_entry(
     entities: list[ArcamFmjSensorEntity] = []
     for coordinator in coordinators.values():
         entities.extend(
-            ArcamFmjSensorEntity(coordinator, description) for description in SENSORS
+            ArcamFmjSensorEntity(coordinator, description)
+            for description in supported_entity_descriptions(coordinator, SENSORS)
         )
     async_add_entities(entities)
 

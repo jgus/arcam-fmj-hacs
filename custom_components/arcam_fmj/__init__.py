@@ -5,14 +5,17 @@ from asyncio import timeout
 from contextlib import AsyncExitStack
 import logging
 
-from arcam.fmj.client import Client
+from arcam.fmj.client import Client, ClientContext
 from arcam.fmj.errors import ConnectionFailed
+from arcam.fmj.models import APIVERSION_ZONE2_SERIES
 
+from homeassistant.config_entries import ConfigEntryNotReady
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from .const import DEFAULT_SCAN_INTERVAL
+from .const import DEFAULT_SCAN_INTERVAL, DISCOVERY_TIMEOUT
 from .coordinator import ArcamFmjConfigEntry, ArcamFmjCoordinator, ArcamFmjRuntimeData
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,13 +28,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ArcamFmjConfigEntry) -> 
     """Set up config entry."""
     client = Client(entry.data[CONF_HOST], entry.data[CONF_PORT])
 
-    coordinators: dict[int, ArcamFmjCoordinator] = {}
-    for zone in (1, 2):
-        coordinator = ArcamFmjCoordinator(hass, entry, client, zone)
-        coordinators[zone] = coordinator
+    zone1_coordinator = ArcamFmjCoordinator(hass, entry, client, 1)
+    try:
+        async with timeout(DISCOVERY_TIMEOUT):
+            async with ClientContext(client), zone1_coordinator.state:
+                await zone1_coordinator.async_config_entry_first_refresh()
+        model, revision, software_version, system_model = (
+            zone1_coordinator.discovered_device_metadata()
+        )
+    except (ConnectionFailed, OSError, TimeoutError, UpdateFailed) as err:
+        raise ConfigEntryNotReady from err
+    zone1_coordinator.set_device_metadata(
+        model, revision, software_version, system_model
+    )
 
-    # Register the zone 1 device before forwarding platforms so the other zones'
-    # entities can link to it via via_device_id.
+    coordinators = {1: zone1_coordinator}
+    if model in APIVERSION_ZONE2_SERIES:
+        zone2_coordinator = ArcamFmjCoordinator(hass, entry, client, 2)
+        zone2_coordinator.set_device_metadata(
+            model, revision, software_version, system_model
+        )
+        coordinators[2] = zone2_coordinator
+
     device_registry = dr.async_get(hass)
     zone1_device = device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,

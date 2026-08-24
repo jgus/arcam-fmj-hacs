@@ -16,14 +16,20 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import ArcamFmjConfigEntry
-from .entity import ArcamFmjEntity
+from .entity import (
+    ArcamFmjCommandEntityDescription,
+    ArcamFmjEntity,
+    supported_entity_descriptions,
+)
 
 # Read-only, coordinator-driven entities; no per-entity I/O to bound.
 PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
-class ArcamFmjBinarySensorEntityDescription(BinarySensorEntityDescription):
+class ArcamFmjBinarySensorEntityDescription(
+    ArcamFmjCommandEntityDescription, BinarySensorEntityDescription
+):
     """Describes an Arcam FMJ binary sensor entity."""
 
     value_fn: Callable[[State], bool | None]
@@ -32,6 +38,7 @@ class ArcamFmjBinarySensorEntityDescription(BinarySensorEntityDescription):
 BINARY_SENSORS: tuple[ArcamFmjBinarySensorEntityDescription, ...] = (
     ArcamFmjBinarySensorEntityDescription(
         key="incoming_video_interlaced",
+        command=INCOMING_VIDEO_PARAMETERS,
         translation_key="incoming_video_interlaced",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda state: (
@@ -55,7 +62,9 @@ async def async_setup_entry(
     for coordinator in coordinators.values():
         entities.extend(
             ArcamFmjBinarySensorEntity(coordinator, description)
-            for description in BINARY_SENSORS
+            for description in supported_entity_descriptions(
+                coordinator, BINARY_SENSORS
+            )
         )
     async_add_entities(entities)
 
