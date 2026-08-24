@@ -19,9 +19,11 @@ from arcam.fmj.commands import (
     NETWORK_PLAYBACK_STATUS,
     POWER,
     RDS_INFORMATION,
+    SIMULATE_RC5_IR_COMMAND,
     TUNER_PRESET,
     VOLUME,
 )
+from arcam.fmj.rc5 import RC5CODE_PLAYBACK, RC5CodePlayback
 
 from homeassistant.components.media_player import (
     BrowseError,
@@ -49,6 +51,7 @@ ATTR_MEDIA_GENRE = "media_genre"
 ATTR_MEDIA_SAMPLE_RATE = "media_sample_rate"
 
 _NETWORK_SOURCES = frozenset({SourceCodes.NET, SourceCodes.USB, SourceCodes.NET_USB})
+_TRANSPORT_SOURCES = _NETWORK_SOURCES | {SourceCodes.BT}
 _MUSIC_SOURCES = _NETWORK_SOURCES | {
     SourceCodes.BT,
     SourceCodes.DAB,
@@ -73,6 +76,13 @@ _BLUETOOTH_CODECS = {
     BluetoothAudioStatus.PLAYING_AAC: "AAC",
     BluetoothAudioStatus.PLAYING_APTX: "aptX",
     BluetoothAudioStatus.PLAYING_APTX_HD: "aptX HD",
+}
+_TRANSPORT_FEATURES = {
+    RC5CodePlayback.PLAY: MediaPlayerEntityFeature.PLAY,
+    RC5CodePlayback.PAUSE: MediaPlayerEntityFeature.PAUSE,
+    RC5CodePlayback.STOP: MediaPlayerEntityFeature.STOP,
+    RC5CodePlayback.SKIP_FORWARD: MediaPlayerEntityFeature.NEXT_TRACK,
+    RC5CodePlayback.SKIP_BACK: MediaPlayerEntityFeature.PREVIOUS_TRACK,
 }
 
 # arcam-fmj serializes commands on a single TCP writer at the library
@@ -132,6 +142,10 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
             )
         if self.coordinator.supports_command(DECODE_MODE_2CH):
             features |= MediaPlayerEntityFeature.SELECT_SOUND_MODE
+        transport_codes = self._supported_transport_codes()
+        for code, feature in _TRANSPORT_FEATURES.items():
+            if code in transport_codes:
+                features |= feature
         return features
 
     @property
@@ -216,6 +230,36 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         """Turn volume up for media player."""
         await self._state.dec(VOLUME)
         self.async_write_ha_state()
+
+    @convert_exception
+    @override
+    async def async_media_play(self) -> None:
+        """Send play command."""
+        await self._state.send_playback(RC5CodePlayback.PLAY)
+
+    @convert_exception
+    @override
+    async def async_media_pause(self) -> None:
+        """Send pause command."""
+        await self._state.send_playback(RC5CodePlayback.PAUSE)
+
+    @convert_exception
+    @override
+    async def async_media_stop(self) -> None:
+        """Send stop command."""
+        await self._state.send_playback(RC5CodePlayback.STOP)
+
+    @convert_exception
+    @override
+    async def async_media_next_track(self) -> None:
+        """Send skip-forward command."""
+        await self._state.send_playback(RC5CodePlayback.SKIP_FORWARD)
+
+    @convert_exception
+    @override
+    async def async_media_previous_track(self) -> None:
+        """Send skip-back command."""
+        await self._state.send_playback(RC5CodePlayback.SKIP_BACK)
 
     @convert_exception
     @override
@@ -454,3 +498,13 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         if self._state.get_source() not in _NETWORK_SOURCES:
             return None
         return self._state.get_now_playing()
+
+    def _supported_transport_codes(self) -> frozenset[RC5CodePlayback]:
+        if (
+            self._state.get_source() not in _TRANSPORT_SOURCES
+            or not self.coordinator.supports_command(SIMULATE_RC5_IR_COMMAND)
+        ):
+            return frozenset()
+        return frozenset(
+            RC5CODE_PLAYBACK.get((self._state.api_model, self._state.zn), ())
+        )

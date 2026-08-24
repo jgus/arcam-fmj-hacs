@@ -26,6 +26,7 @@ from arcam.fmj.commands import (
     VOLUME,
 )
 from arcam.fmj.errors import ConnectionFailed, NotConnectedException
+from arcam.fmj.rc5 import RC5CodePlayback
 from arcam.fmj.state import State
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -56,6 +57,11 @@ from homeassistant.components.media_player import (
     ATTR_SOUND_MODE_LIST,
     DOMAIN as MEDIA_PLAYER_DOMAIN,
     SERVICE_PLAY_MEDIA,
+    SERVICE_MEDIA_NEXT_TRACK,
+    SERVICE_MEDIA_PAUSE,
+    SERVICE_MEDIA_PLAY,
+    SERVICE_MEDIA_PREVIOUS_TRACK,
+    SERVICE_MEDIA_STOP,
     SERVICE_SELECT_SOUND_MODE,
     SERVICE_SELECT_SOURCE,
     SERVICE_TURN_OFF,
@@ -69,7 +75,10 @@ from homeassistant.components.media_player import (
 )
 from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, Platform
 from homeassistant.core import HomeAssistant, State as CoreState
-from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.exceptions import (
+    HomeAssistantError,
+    ServiceValidationError,
+)
 from homeassistant.helpers import entity_registry as er
 
 from conftest import MOCK_ENTITY_ID
@@ -77,6 +86,14 @@ from conftest import MOCK_ENTITY_ID
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     snapshot_platform,
+)
+
+_ALL_TRANSPORT_FEATURES = (
+    MediaPlayerEntityFeature.PLAY
+    | MediaPlayerEntityFeature.PAUSE
+    | MediaPlayerEntityFeature.STOP
+    | MediaPlayerEntityFeature.NEXT_TRACK
+    | MediaPlayerEntityFeature.PREVIOUS_TRACK
 )
 
 
@@ -131,6 +148,54 @@ async def test_source_gated_features(
     features = MediaPlayerEntityFeature(state.attributes["supported_features"])
     assert features & MediaPlayerEntityFeature.PLAY_MEDIA
     assert features & MediaPlayerEntityFeature.BROWSE_MEDIA
+
+
+@pytest.mark.parametrize(
+    ("device_model", "source", "expected_features"),
+    [
+        ("AVR20", SourceCodes.NET, _ALL_TRANSPORT_FEATURES),
+        ("AV860", SourceCodes.USB, _ALL_TRANSPORT_FEATURES),
+        ("AVR450", SourceCodes.NET, MediaPlayerEntityFeature.PAUSE),
+        ("SA30", SourceCodes.NET, MediaPlayerEntityFeature(0)),
+        ("ST60", SourceCodes.NET_USB, MediaPlayerEntityFeature(0)),
+        ("AVR20", SourceCodes.PVR, MediaPlayerEntityFeature(0)),
+        ("AVR20", SourceCodes.BT, _ALL_TRANSPORT_FEATURES),
+    ],
+    indirect=["device_model"],
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_transport_features_by_model_and_source(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+    source: SourceCodes,
+    expected_features: MediaPlayerEntityFeature,
+) -> None:
+    state_1.get_source.return_value = source
+
+    state = await update(hass, client, MOCK_ENTITY_ID)
+    features = MediaPlayerEntityFeature(state.attributes["supported_features"])
+
+    assert features & _ALL_TRANSPORT_FEATURES == expected_features
+
+
+@pytest.mark.usefixtures("player_setup")
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_transport_features_by_zone(
+    hass: HomeAssistant,
+    client: Mock,
+    state_2: State,
+) -> None:
+    entity_id = f"{MOCK_ENTITY_ID}_zone_2"
+    state_2.get_source.return_value = SourceCodes.NET
+
+    client.notify_data_updated(zn=2)
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+
+    assert state is not None
+    features = MediaPlayerEntityFeature(state.attributes["supported_features"])
+    assert not features & _ALL_TRANSPORT_FEATURES
 
 
 @pytest.mark.usefixtures("player_setup")
@@ -494,6 +559,58 @@ async def test_volume_down(hass: HomeAssistant, state_1: State) -> None:
         blocking=True,
     )
     state_1.dec.assert_called_with(VOLUME)
+
+
+@pytest.mark.parametrize(
+    ("service", "code"),
+    [
+        (SERVICE_MEDIA_PLAY, RC5CodePlayback.PLAY),
+        (SERVICE_MEDIA_PAUSE, RC5CodePlayback.PAUSE),
+        (SERVICE_MEDIA_STOP, RC5CodePlayback.STOP),
+        (SERVICE_MEDIA_NEXT_TRACK, RC5CodePlayback.SKIP_FORWARD),
+        (SERVICE_MEDIA_PREVIOUS_TRACK, RC5CodePlayback.SKIP_BACK),
+    ],
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_transport_service(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+    service: str,
+    code: RC5CodePlayback,
+) -> None:
+    state_1.get_source.return_value = SourceCodes.NET
+    state_1.send_playback.reset_mock()
+    await update(hass, client, MOCK_ENTITY_ID)
+
+    await hass.services.async_call(
+        MEDIA_PLAYER_DOMAIN,
+        service,
+        service_data={ATTR_ENTITY_ID: MOCK_ENTITY_ID},
+        blocking=True,
+    )
+
+    state_1.send_playback.assert_awaited_once_with(code)
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_bluetooth_transport_service(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+) -> None:
+    state_1.get_source.return_value = SourceCodes.BT
+    state_1.send_playback.reset_mock()
+    await update(hass, client, MOCK_ENTITY_ID)
+
+    await hass.services.async_call(
+        MEDIA_PLAYER_DOMAIN,
+        SERVICE_MEDIA_PLAY,
+        service_data={ATTR_ENTITY_ID: MOCK_ENTITY_ID},
+        blocking=True,
+    )
+
+    state_1.send_playback.assert_awaited_once_with(RC5CodePlayback.PLAY)
 
 
 @pytest.mark.usefixtures("player_setup")

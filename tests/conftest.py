@@ -15,6 +15,7 @@ from arcam.fmj.commands import (
     SYSTEM_MODEL,
     VOLUME,
 )
+from arcam.fmj.models import api_model_for
 from arcam.fmj.packets import ResponsePacket
 from arcam.fmj.state import State
 import pytest
@@ -105,6 +106,7 @@ def _mock_state(client: Mock, zone: int, model: str | None) -> State:
     state = Mock(State)
     state.client = client
     state.zn = zone
+    state.api_model = api_model_for(model)
     state.model = model
     state.revision = MOCK_DEVICE_REVISION
     state.command_values = {
