@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, override
 
 from arcam.fmj.codecs import (
+    SA_SOURCE_MAPPING,
     AutoShutdown,
     CompressionMode,
     DisplayInfoTypeValue,
@@ -24,6 +25,7 @@ from arcam.fmj.commands import (
     DISPLAY_INFO_TYPE,
     DOLBY_AUDIO,
     IMAX_ENHANCED,
+    PROCESSOR_MODE_INPUT,
     ROOM_EQUALIZATION,
     ROOM_EQ_NAMES,
     VIDEO_FILM_MODE,
@@ -153,6 +155,18 @@ DISPLAY_INFO_TYPE_DESCRIPTION = ArcamFmjCommandEntityDescription(
     entity_category=EntityCategory.CONFIG,
 )
 
+PROCESSOR_MODE_INPUT_DESCRIPTION = ArcamFmjCommandEntityDescription(
+    key="processor_mode_input",
+    command=PROCESSOR_MODE_INPUT,
+    translation_key="processor_mode_input",
+    entity_category=EntityCategory.CONFIG,
+)
+
+_PROCESSOR_MODE_INPUT_OPTIONS = {
+    "disabled": None,
+    **{source.name.lower(): source for source in SA_SOURCE_MAPPING},
+}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -183,6 +197,14 @@ async def async_setup_entry(
         )
         for coordinator in coordinators.values()
         if coordinator.supports_command(DISPLAY_INFO_TYPE)
+    )
+    entities.extend(
+        ArcamFmjProcessorModeInputSelectEntity(
+            coordinator,
+            PROCESSOR_MODE_INPUT_DESCRIPTION,
+        )
+        for coordinator in coordinators.values()
+        if coordinator.supports_command(PROCESSOR_MODE_INPUT)
     )
     async_add_entities(entities)
 
@@ -332,5 +354,27 @@ class ArcamFmjDisplayInfoSelectEntity(ArcamFmjEntity, SelectEntity):
         """Select a VFD information type."""
         await self.coordinator.state.set(
             DISPLAY_INFO_TYPE, self._option_values()[option]
+        )
+        self.async_write_ha_state()
+
+
+class ArcamFmjProcessorModeInputSelectEntity(ArcamFmjEntity, SelectEntity):
+    """Representation of an SA processor-mode-input select."""
+
+    _attr_options = list(_PROCESSOR_MODE_INPUT_OPTIONS)
+
+    @property
+    @override
+    def current_option(self) -> str:
+        """Return the processor-mode input or Disabled."""
+        value = self.coordinator.state.get(PROCESSOR_MODE_INPUT)
+        return "disabled" if value is None else value.name.lower()
+
+    @convert_exception
+    @override
+    async def async_select_option(self, option: str) -> None:
+        """Select or disable the processor-mode input."""
+        await self.coordinator.state.set(
+            PROCESSOR_MODE_INPUT, _PROCESSOR_MODE_INPUT_OPTIONS[option]
         )
         self.async_write_ha_state()

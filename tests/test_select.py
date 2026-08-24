@@ -27,6 +27,7 @@ from arcam.fmj.commands import (
     DISPLAY_INFO_TYPE,
     DOLBY_AUDIO,
     IMAX_ENHANCED,
+    PROCESSOR_MODE_INPUT,
     ROOM_EQUALIZATION,
     ROOM_EQ_NAMES,
     VIDEO_FILM_MODE,
@@ -61,6 +62,7 @@ ENTITY_IDS = {
     DISPLAY_INFO_TYPE: "select.arcam_fmj_127_0_0_1_vfd_information",
     VIDEO_SELECTION: "select.arcam_fmj_127_0_0_1_legacy_video_selection",
     IMAX_ENHANCED: "select.arcam_fmj_127_0_0_1_imax_enhanced_mode",
+    PROCESSOR_MODE_INPUT: "select.arcam_fmj_127_0_0_1_processor_mode_input",
     ROOM_EQUALIZATION: "select.arcam_fmj_127_0_0_1_room_equalization",
     DOLBY_AUDIO: "select.arcam_fmj_127_0_0_1_dolby_audio_mode",
     COMPRESSION: "select.arcam_fmj_127_0_0_1_dynamic_range_compression",
@@ -92,7 +94,11 @@ AVR20_COMMANDS = {
     VIDEO_OUTPUT_SWITCHING,
     ROOM_EQUALIZATION,
 }
-SA20_COMMANDS = {DISPLAY_BRIGHTNESS, AUTO_SHUTDOWN_CONTROL}
+SA20_COMMANDS = {
+    DISPLAY_BRIGHTNESS,
+    AUTO_SHUTDOWN_CONTROL,
+    PROCESSOR_MODE_INPUT,
+}
 
 
 @pytest.fixture(autouse=True)
@@ -254,6 +260,60 @@ async def test_display_info_type(
     assert state_1.set.await_args_list == [
         call(DISPLAY_INFO_TYPE, value) for _, value, _, _ in cases
     ]
+
+
+@pytest.mark.parametrize("device_model", ["SA20"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_processor_mode_input(
+    hass: HomeAssistant,
+    state_1: State,
+    client: Mock,
+) -> None:
+    """Test processor-mode input choices and explicit Disabled state."""
+    entity_id = ENTITY_IDS[PROCESSOR_MODE_INPUT]
+    state_1.command_values[PROCESSOR_MODE_INPUT] = SourceCodes.PHONO
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(entity_id)
+    assert entity_state is not None
+    assert entity_state.state == "phono"
+    assert entity_state.attributes["options"] == [
+        "disabled",
+        "phono",
+        "aux",
+        "pvr",
+        "av",
+        "stb",
+        "cd",
+        "bd",
+        "sat",
+        "game",
+        "net",
+        "usb",
+        "arc_erc",
+    ]
+
+    for option in ("disabled", "usb"):
+        await hass.services.async_call(
+            SELECT_DOMAIN,
+            SERVICE_SELECT_OPTION,
+            {ATTR_ENTITY_ID: entity_id, ATTR_OPTION: option},
+            blocking=True,
+        )
+
+    assert state_1.set.await_args_list == [
+        call(PROCESSOR_MODE_INPUT, None),
+        call(PROCESSOR_MODE_INPUT, SourceCodes.USB),
+    ]
+
+    state_1.command_values[PROCESSOR_MODE_INPUT] = None
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(entity_id)
+    assert entity_state is not None
+    assert entity_state.state == "disabled"
 
 
 @pytest.mark.parametrize("device_model", ["AVR20"], indirect=True)

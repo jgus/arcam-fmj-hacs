@@ -180,6 +180,24 @@
           "on": "On"
         }
       },
+      "processor_mode_input": {
+        "name": "Processor-mode input",
+        "state": {
+          "arc_erc": "ARC/eARC",
+          "aux": "AUX",
+          "av": "AV",
+          "bd": "Blu-ray",
+          "cd": "CD",
+          "disabled": "Disabled",
+          "game": "Game",
+          "net": "Network",
+          "phono": "Phono",
+          "pvr": "PVR",
+          "sat": "Satellite",
+          "stb": "Set-top box",
+          "usb": "USB"
+        }
+      },
       "room_equalization": {
         "name": "Room equalization",
         "state": {

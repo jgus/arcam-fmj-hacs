@@ -97,6 +97,9 @@
       "imax_enhanced": {
         "default": "mdi:movie-open-play"
       },
+      "processor_mode_input": {
+        "default": "mdi:audio-input-rca"
+      },
       "room_equalization": {
         "default": "mdi:tune-vertical"
       },
