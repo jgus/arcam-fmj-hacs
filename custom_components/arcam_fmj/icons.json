@@ -55,6 +55,17 @@
         "default": "mdi:thermometer"
       }
     },
+    "switch": {
+      "direct_mode": {
+        "default": "mdi:surround-sound"
+      },
+      "dolby_pliix_panorama": {
+        "default": "mdi:panorama-wide-angle"
+      },
+      "zone_1_osd": {
+        "default": "mdi:monitor-dashboard"
+      }
+    },
     "text": {
       "friendly_name": {
         "default": "mdi:form-textbox"

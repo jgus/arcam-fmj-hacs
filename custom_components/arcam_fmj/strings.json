@@ -190,6 +190,17 @@
         "name": "Output-stage temperature 1"
       }
     },
+    "switch": {
+      "direct_mode": {
+        "name": "Direct mode"
+      },
+      "dolby_pliix_panorama": {
+        "name": "Dolby PLIIx panorama"
+      },
+      "zone_1_osd": {
+        "name": "Zone 1 OSD"
+      }
+    },
     "text": {
       "friendly_name": {
         "name": "Friendly name"
