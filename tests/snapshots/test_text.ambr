@@ -1,0 +1,60 @@
+# serializer version: 1
+# name: test_setup[SA20][text.arcam_fmj_127_0_0_1_friendly_name-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <TextEntityCapabilityAttribute.MAX: 'max'>: 255,
+      <TextEntityCapabilityAttribute.MIN: 'min'>: 0,
+      <TextEntityCapabilityAttribute.MODE: 'mode'>: <TextMode.TEXT: 'text'>,
+      <TextEntityCapabilityAttribute.PATTERN: 'pattern'>: None,
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'text',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'text.arcam_fmj_127_0_0_1_friendly_name',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Friendly name',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Friendly name',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'friendly_name',
+    'unique_id': '456789abcdef-1-friendly_name',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[SA20][text.arcam_fmj_127_0_0_1_friendly_name-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Friendly name',
+      <TextEntityCapabilityAttribute.MAX: 'max'>: 255,
+      <TextEntityCapabilityAttribute.MIN: 'min'>: 0,
+      <TextEntityCapabilityAttribute.MODE: 'mode'>: <TextMode.TEXT: 'text'>,
+      <TextEntityCapabilityAttribute.PATTERN: 'pattern'>: None,
+    }),
+    'context': <ANY>,
+    'entity_id': 'text.arcam_fmj_127_0_0_1_friendly_name',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---

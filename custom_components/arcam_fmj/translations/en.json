@@ -189,6 +189,11 @@
             "output_temperature": {
                 "name": "Output-stage temperature 1"
             }
+        },
+        "text": {
+            "friendly_name": {
+                "name": "Friendly name"
+            }
         }
     },
     "exceptions": {

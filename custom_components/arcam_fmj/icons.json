@@ -54,6 +54,11 @@
       "output_temperature": {
         "default": "mdi:thermometer"
       }
+    },
+    "text": {
+      "friendly_name": {
+        "default": "mdi:form-textbox"
+      }
     }
   }
 }

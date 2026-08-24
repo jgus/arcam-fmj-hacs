@@ -21,7 +21,12 @@ from .coordinator import ArcamFmjConfigEntry, ArcamFmjCoordinator, ArcamFmjRunti
 _LOGGER = logging.getLogger(__name__)
 
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.SENSOR]
+PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.MEDIA_PLAYER,
+    Platform.SENSOR,
+    Platform.TEXT,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ArcamFmjConfigEntry) -> bool:
