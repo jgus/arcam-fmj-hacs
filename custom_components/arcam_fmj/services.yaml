@@ -1,0 +1,24 @@
+save_settings:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: arcam_fmj
+    pin:
+      required: true
+      selector:
+        text:
+          type: password
+restore_settings:
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: arcam_fmj
+    pin:
+      required: true
+      selector:
+        text:
+          type: password

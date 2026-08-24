@@ -12,13 +12,17 @@ from arcam.fmj.models import APIVERSION_ZONE2_SERIES
 from homeassistant.config_entries import ConfigEntryNotReady
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from .const import DEFAULT_SCAN_INTERVAL, DISCOVERY_TIMEOUT
+from .const import DEFAULT_SCAN_INTERVAL, DISCOVERY_TIMEOUT, DOMAIN
 from .coordinator import ArcamFmjConfigEntry, ArcamFmjCoordinator, ArcamFmjRuntimeData
+from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 PLATFORMS = [
@@ -32,6 +36,12 @@ PLATFORMS = [
     Platform.SWITCH,
     Platform.TEXT,
 ]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up Arcam FMJ services."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ArcamFmjConfigEntry) -> bool:

@@ -454,6 +454,12 @@
         "unsupported_remote_command": {
             "message": "Unsupported remote command: {command}."
         },
+        "settings_backup_unavailable": {
+            "message": "No secure settings backup is available to restore."
+        },
+        "settings_backup_unsupported": {
+            "message": "Secure settings backup is not supported by this device."
+        },
         "room_eq_state_read_only": {
             "message": "Room EQ state {state} is read-only."
         },
@@ -465,6 +471,36 @@
         },
         "unsupported_source": {
             "message": "Unsupported source: {source}."
+        }
+    },
+    "services": {
+        "restore_settings": {
+            "description": "Restores the device settings from its secure backup, replacing the current settings.",
+            "fields": {
+                "config_entry_id": {
+                    "description": "The Arcam FMJ device to restore.",
+                    "name": "Device"
+                },
+                "pin": {
+                    "description": "The four-digit installer PIN protecting the secure backup.",
+                    "name": "PIN"
+                }
+            },
+            "name": "Restore device settings"
+        },
+        "save_settings": {
+            "description": "Saves the current device settings as a secure backup, replacing any existing backup.",
+            "fields": {
+                "config_entry_id": {
+                    "description": "The Arcam FMJ device to back up.",
+                    "name": "Device"
+                },
+                "pin": {
+                    "description": "The four-digit installer PIN used to protect the secure backup.",
+                    "name": "PIN"
+                }
+            },
+            "name": "Save device settings"
         }
     }
 }
