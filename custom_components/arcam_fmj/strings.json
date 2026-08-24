@@ -138,6 +138,18 @@
           "off": "Off"
         }
       },
+      "dac_filter": {
+        "name": "DAC filter",
+        "state": {
+          "apodizing": "Apodizing",
+          "brick_wall": "Brick wall",
+          "corrected_fast": "Corrected phase fast roll-off",
+          "linear_fast": "Linear phase fast roll-off",
+          "linear_slow": "Linear phase slow roll-off",
+          "minimum_fast": "Minimum phase fast roll-off",
+          "minimum_slow": "Minimum phase slow roll-off"
+        }
+      },
       "display_brightness": {
         "name": "Front-panel display brightness",
         "state": {

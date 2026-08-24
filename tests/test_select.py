@@ -7,6 +7,7 @@ from arcam.fmj.codecs import (
     AutoShutdown,
     CompressionMode,
     DabDisplayInfoType,
+    DacFilter,
     DisplayInfoType,
     DisplayBrightness,
     DolbyAudioMode,
@@ -23,6 +24,7 @@ from arcam.fmj.codecs import (
 from arcam.fmj.commands import (
     AUTO_SHUTDOWN_CONTROL,
     COMPRESSION,
+    DAC_FILTER,
     DISPLAY_BRIGHTNESS,
     DISPLAY_INFO_TYPE,
     DOLBY_AUDIO,
@@ -60,6 +62,7 @@ from pytest_homeassistant_custom_component.common import (
 ENTITY_IDS = {
     DISPLAY_BRIGHTNESS: "select.arcam_fmj_127_0_0_1_front_panel_display_brightness",
     DISPLAY_INFO_TYPE: "select.arcam_fmj_127_0_0_1_vfd_information",
+    DAC_FILTER: "select.arcam_fmj_127_0_0_1_dac_filter",
     VIDEO_SELECTION: "select.arcam_fmj_127_0_0_1_legacy_video_selection",
     IMAX_ENHANCED: "select.arcam_fmj_127_0_0_1_imax_enhanced_mode",
     PROCESSOR_MODE_INPUT: "select.arcam_fmj_127_0_0_1_processor_mode_input",
@@ -97,8 +100,18 @@ AVR20_COMMANDS = {
 SA20_COMMANDS = {
     DISPLAY_BRIGHTNESS,
     AUTO_SHUTDOWN_CONTROL,
+    DAC_FILTER,
     PROCESSOR_MODE_INPUT,
 }
+DAC_FILTER_OPTIONS = [
+    "linear_fast",
+    "linear_slow",
+    "minimum_fast",
+    "minimum_slow",
+    "brick_wall",
+    "corrected_fast",
+    "apodizing",
+]
 
 
 @pytest.fixture(autouse=True)
@@ -133,6 +146,7 @@ async def test_setup(
         ("AVR450", VIDEO_MPEG_NOISE_REDUCTION, VideoNoiseReduction.MEDIUM),
         ("AVR450", VIDEO_OUTPUT_SWITCHING, HdmiOutput.OUT_1_2),
         ("SA20", AUTO_SHUTDOWN_CONTROL, AutoShutdown.HOURS_2),
+        ("SA20", DAC_FILTER, DacFilter.APODIZING),
     ],
     indirect=["device_model"],
 )
@@ -440,6 +454,19 @@ async def test_model_support(
                 "hours_4",
             ],
         ),
+        (
+            "SA10",
+            DAC_FILTER,
+            ["linear_fast", "linear_slow", "minimum_fast"],
+        ),
+        (
+            "SA20",
+            DAC_FILTER,
+            DAC_FILTER_OPTIONS,
+        ),
+        ("SA30", DAC_FILTER, DAC_FILTER_OPTIONS),
+        ("SA750", DAC_FILTER, DAC_FILTER_OPTIONS),
+        ("ST60", DAC_FILTER, DAC_FILTER_OPTIONS),
     ],
     indirect=["device_model"],
 )

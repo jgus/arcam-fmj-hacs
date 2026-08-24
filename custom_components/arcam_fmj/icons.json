@@ -85,6 +85,9 @@
       "compression": {
         "default": "mdi:waveform"
       },
+      "dac_filter": {
+        "default": "mdi:filter-variant"
+      },
       "display_brightness": {
         "default": "mdi:brightness-6"
       },

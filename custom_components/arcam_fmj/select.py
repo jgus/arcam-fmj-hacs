@@ -7,6 +7,7 @@ from arcam.fmj.codecs import (
     SA_SOURCE_MAPPING,
     AutoShutdown,
     CompressionMode,
+    DacFilter,
     DisplayInfoTypeValue,
     DisplayBrightness,
     DolbyAudioMode,
@@ -21,6 +22,7 @@ from arcam.fmj.codecs import (
 from arcam.fmj.commands import (
     AUTO_SHUTDOWN_CONTROL,
     COMPRESSION,
+    DAC_FILTER,
     DISPLAY_BRIGHTNESS,
     DISPLAY_INFO_TYPE,
     DOLBY_AUDIO,
@@ -137,6 +139,13 @@ SELECTS: tuple[ArcamFmjSelectEntityDescription, ...] = (
         translation_key="auto_shutdown_control",
         entity_category=EntityCategory.CONFIG,
         enum_type=AutoShutdown,
+    ),
+    ArcamFmjSelectEntityDescription(
+        key="dac_filter",
+        command=DAC_FILTER,
+        translation_key="dac_filter",
+        entity_category=EntityCategory.CONFIG,
+        enum_type=DacFilter,
     ),
 )
 
