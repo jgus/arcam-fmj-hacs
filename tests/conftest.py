@@ -119,6 +119,7 @@ def _mock_state(client: Mock, zone: int, model: str | None) -> State:
     state.get_source.return_value = None
     state.get_source_list.return_value = []
     state.get_incoming_audio_format.return_value = (None, None)
+    state.get_now_playing.return_value = None
     state.get_decode_modes.return_value = []
     state.get_decode_mode.return_value = None
     state.get_lifter_temperature.return_value = 0

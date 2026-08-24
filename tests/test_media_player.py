@@ -4,11 +4,19 @@ from collections.abc import Generator
 from math import isclose
 from unittest.mock import Mock, PropertyMock, patch
 
-from arcam.fmj.codecs import DecodeMode2CH, DecodeModeMCH, SourceCodes
+from arcam.fmj.codecs import (
+    DecodeMode2CH,
+    DecodeModeMCH,
+    NetworkPlaybackStatus,
+    NowPlayingEncoder,
+    NowPlayingInfo,
+    SourceCodes,
+)
 from arcam.fmj.commands import (
     DAB_STATION,
     DLS_PDT,
     MUTE,
+    NETWORK_PLAYBACK_STATUS,
     POWER,
     RDS_INFORMATION,
     TUNER_PRESET,
@@ -19,17 +27,24 @@ from arcam.fmj.state import State
 import pytest
 from syrupy.assertion import SnapshotAssertion
 
-from custom_components.arcam_fmj.media_player import ArcamFmj
+from custom_components.arcam_fmj.media_player import (
+    ATTR_MEDIA_ENCODER,
+    ATTR_MEDIA_SAMPLE_RATE,
+    ArcamFmj,
+)
 from homeassistant.components.homeassistant import (
     DOMAIN as HA_DOMAIN,
     SERVICE_UPDATE_ENTITY,
 )
 from homeassistant.components.media_player import (
+    ATTR_APP_NAME,
     ATTR_INPUT_SOURCE,
+    ATTR_MEDIA_ALBUM_NAME,
     ATTR_MEDIA_ARTIST,
     ATTR_MEDIA_CHANNEL,
     ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_CONTENT_TYPE,
+    ATTR_MEDIA_TITLE,
     ATTR_MEDIA_VOLUME_LEVEL,
     ATTR_MEDIA_VOLUME_MUTED,
     ATTR_SOUND_MODE,
@@ -167,6 +182,64 @@ async def test_powered_on(hass: HomeAssistant, client: Mock, state_1: State) -> 
     data = await update(hass, client, MOCK_ENTITY_ID)
     assert data.attributes["source"] == "PVR"
     assert data.state == "on"
+
+
+@pytest.mark.parametrize(
+    ("playback_status", "expected_state"),
+    [
+        (NetworkPlaybackStatus.STOPPED, "idle"),
+        (NetworkPlaybackStatus.TRANSITIONING, "buffering"),
+        (NetworkPlaybackStatus.PLAYING, "playing"),
+        (NetworkPlaybackStatus.PAUSED, "paused"),
+        (None, "on"),
+    ],
+)
+@pytest.mark.parametrize(
+    "source", [SourceCodes.NET, SourceCodes.USB, SourceCodes.NET_USB]
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_network_playback_state(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+    source: SourceCodes,
+    playback_status: NetworkPlaybackStatus | None,
+    expected_state: str,
+) -> None:
+    """Test network playback state mapping."""
+    state_1.get_source.return_value = source
+    state_1.command_values[NETWORK_PLAYBACK_STATUS] = playback_status
+
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.state == expected_state
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_network_playback_state_is_source_gated(
+    hass: HomeAssistant, client: Mock, state_1: State
+) -> None:
+    """Test stale network playback state is hidden on other sources."""
+    state_1.get_source.return_value = SourceCodes.PVR
+    state_1.command_values[NETWORK_PLAYBACK_STATUS] = NetworkPlaybackStatus.PLAYING
+
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.state == "on"
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_powered_off_ignores_network_playback_state(
+    hass: HomeAssistant, client: Mock, state_1: State
+) -> None:
+    """Test power state takes precedence over network playback state."""
+    state_1.get_source.return_value = SourceCodes.NET
+    state_1.command_values[POWER] = False
+    state_1.command_values[NETWORK_PLAYBACK_STATUS] = NetworkPlaybackStatus.PLAYING
+
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.state == "off"
 
 
 @pytest.mark.usefixtures("player_setup")
@@ -554,6 +627,9 @@ async def test_set_volume_level_lost(
     [
         (SourceCodes.DAB, MediaType.MUSIC),
         (SourceCodes.FM, MediaType.MUSIC),
+        (SourceCodes.NET, MediaType.MUSIC),
+        (SourceCodes.USB, MediaType.MUSIC),
+        (SourceCodes.NET_USB, MediaType.MUSIC),
         (SourceCodes.PVR, None),
         (None, None),
     ],
@@ -648,4 +724,66 @@ async def test_media_title(
     ) as media_channel:
         media_channel.return_value = channel
         data = await update(hass, client, MOCK_ENTITY_ID)
-        assert data.attributes.get("media_title") == title
+        assert data.attributes.get(ATTR_MEDIA_TITLE) == title
+
+
+@pytest.mark.parametrize(
+    "source", [SourceCodes.NET, SourceCodes.USB, SourceCodes.NET_USB]
+)
+@pytest.mark.usefixtures("player_setup")
+async def test_network_now_playing_metadata(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+    source: SourceCodes,
+) -> None:
+    """Test network and USB now-playing metadata."""
+    state_1.get_source.return_value = source
+    state_1.get_now_playing.return_value = NowPlayingInfo(
+        track="The Chain",
+        artist="Fleetwood Mac",
+        album="Rumours",
+        application="Qobuz",
+        encoder=NowPlayingEncoder.FLAC,
+        sample_rate=96000,
+    )
+
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.attributes[ATTR_MEDIA_TITLE] == "The Chain"
+    assert data.attributes[ATTR_MEDIA_ARTIST] == "Fleetwood Mac"
+    assert data.attributes[ATTR_MEDIA_ALBUM_NAME] == "Rumours"
+    assert data.attributes[ATTR_APP_NAME] == "Qobuz"
+    assert data.attributes[ATTR_MEDIA_ENCODER] == "FLAC"
+    assert data.attributes[ATTR_MEDIA_SAMPLE_RATE] == 96000
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_network_now_playing_metadata_is_source_gated(
+    hass: HomeAssistant,
+    client: Mock,
+    state_1: State,
+) -> None:
+    """Test stale network metadata is hidden on other sources."""
+    state_1.get_source.return_value = SourceCodes.NET
+    state_1.get_now_playing.return_value = NowPlayingInfo(
+        track="The Chain",
+        artist="Fleetwood Mac",
+        album="Rumours",
+        application="Qobuz",
+        encoder=NowPlayingEncoder.FLAC,
+        sample_rate=96000,
+    )
+
+    network_data = await update(hass, client, MOCK_ENTITY_ID)
+    assert network_data.attributes[ATTR_MEDIA_TITLE] == "The Chain"
+
+    state_1.get_source.return_value = SourceCodes.PVR
+    data = await update(hass, client, MOCK_ENTITY_ID)
+
+    assert data.attributes[ATTR_MEDIA_TITLE] == "PVR"
+    assert ATTR_MEDIA_ARTIST not in data.attributes
+    assert ATTR_MEDIA_ALBUM_NAME not in data.attributes
+    assert ATTR_APP_NAME not in data.attributes
+    assert ATTR_MEDIA_ENCODER not in data.attributes
+    assert ATTR_MEDIA_SAMPLE_RATE not in data.attributes

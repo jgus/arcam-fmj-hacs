@@ -3,13 +3,14 @@
 import logging
 from typing import Any, override
 
-from arcam.fmj.codecs import SourceCodes
+from arcam.fmj.codecs import NetworkPlaybackStatus, NowPlayingInfo, SourceCodes
 from arcam.fmj.commands import (
     CURRENT_SOURCE,
     DAB_STATION,
     DECODE_MODE_2CH,
     DLS_PDT,
     MUTE,
+    NETWORK_PLAYBACK_STATUS,
     POWER,
     RDS_INFORMATION,
     TUNER_PRESET,
@@ -35,6 +36,18 @@ from .coordinator import ArcamFmjConfigEntry, ArcamFmjCoordinator
 from .entity import ArcamFmjEntity, convert_exception
 
 _LOGGER = logging.getLogger(__name__)
+
+ATTR_MEDIA_ENCODER = "media_encoder"
+ATTR_MEDIA_SAMPLE_RATE = "media_sample_rate"
+
+_NETWORK_SOURCES = frozenset({SourceCodes.NET, SourceCodes.USB, SourceCodes.NET_USB})
+_MUSIC_SOURCES = _NETWORK_SOURCES | {SourceCodes.DAB, SourceCodes.FM}
+_NETWORK_STATES = {
+    NetworkPlaybackStatus.STOPPED: MediaPlayerState.IDLE,
+    NetworkPlaybackStatus.TRANSITIONING: MediaPlayerState.BUFFERING,
+    NetworkPlaybackStatus.PLAYING: MediaPlayerState.PLAYING,
+    NetworkPlaybackStatus.PAUSED: MediaPlayerState.PAUSED,
+}
 
 # arcam-fmj serializes commands on a single TCP writer at the library
 # layer; serialize at HA's layer to match the device's contract.
@@ -107,7 +120,13 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         power = self._state.get(POWER)
         if power is None:
             return None
-        return MediaPlayerState.ON if power else MediaPlayerState.OFF
+        if not power:
+            return MediaPlayerState.OFF
+        if self._state.get_source() in _NETWORK_SOURCES:
+            return _NETWORK_STATES.get(
+                self._state.get(NETWORK_PLAYBACK_STATUS), MediaPlayerState.ON
+            )
+        return MediaPlayerState.ON
 
     @convert_exception
     @override
@@ -289,7 +308,7 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
     def media_content_type(self) -> MediaType | None:
         """Content type of current playing media."""
         source = self._state.get_source()
-        if source in (SourceCodes.DAB, SourceCodes.FM):
+        if source in _MUSIC_SOURCES:
             value = MediaType.MUSIC
         else:
             value = None
@@ -329,9 +348,27 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         """Artist of current playing media, music track only."""
         if self._state.get_source() is SourceCodes.DAB:
             value = self._state.get(DLS_PDT)
+        elif (now_playing := self._network_now_playing()) is not None:
+            value = now_playing.artist
         else:
             value = None
         return value
+
+    @property
+    @override
+    def media_album_name(self) -> str | None:
+        """Album name of current playing media, music track only."""
+        if (now_playing := self._network_now_playing()) is None:
+            return None
+        return now_playing.album
+
+    @property
+    @override
+    def app_name(self) -> str | None:
+        """Name of the current running app."""
+        if (now_playing := self._network_now_playing()) is None:
+            return None
+        return now_playing.application
 
     @property
     @override
@@ -340,8 +377,31 @@ class ArcamFmj(ArcamFmjEntity, MediaPlayerEntity):
         if (source := self._state.get_source()) is None:
             return None
 
-        if channel := self.media_channel:
+        if (
+            now_playing := self._network_now_playing()
+        ) is not None and now_playing.track is not None:
+            value = now_playing.track
+        elif channel := self.media_channel:
             value = f"{source.name} - {channel}"
         else:
             value = source.name
         return value
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return network playback details."""
+        if (now_playing := self._network_now_playing()) is None:
+            return None
+
+        attributes: dict[str, Any] = {}
+        if now_playing.encoder is not None:
+            attributes[ATTR_MEDIA_ENCODER] = now_playing.encoder.name
+        if now_playing.sample_rate:
+            attributes[ATTR_MEDIA_SAMPLE_RATE] = now_playing.sample_rate
+        return attributes or None
+
+    def _network_now_playing(self) -> NowPlayingInfo | None:
+        if self._state.get_source() not in _NETWORK_SOURCES:
+            return None
+        return self._state.get_now_playing()
