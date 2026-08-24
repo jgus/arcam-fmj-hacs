@@ -88,6 +88,9 @@
       "display_brightness": {
         "default": "mdi:brightness-6"
       },
+      "display_info_type": {
+        "default": "mdi:information-outline"
+      },
       "dolby_audio": {
         "default": "mdi:dolby"
       },

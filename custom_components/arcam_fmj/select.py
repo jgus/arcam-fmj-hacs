@@ -6,6 +6,7 @@ from typing import Any, override
 from arcam.fmj.codecs import (
     AutoShutdown,
     CompressionMode,
+    DisplayInfoTypeValue,
     DisplayBrightness,
     DolbyAudioMode,
     HdmiOutput,
@@ -14,11 +15,13 @@ from arcam.fmj.codecs import (
     VideoFilmMode,
     VideoNoiseReduction,
     VideoSelection,
+    display_info_types_for_source,
 )
 from arcam.fmj.commands import (
     AUTO_SHUTDOWN_CONTROL,
     COMPRESSION,
     DISPLAY_BRIGHTNESS,
+    DISPLAY_INFO_TYPE,
     DOLBY_AUDIO,
     IMAX_ENHANCED,
     ROOM_EQUALIZATION,
@@ -143,6 +146,13 @@ ROOM_EQUALIZATION_DESCRIPTION = ArcamFmjSelectEntityDescription(
     enum_type=RoomEqMode,
 )
 
+DISPLAY_INFO_TYPE_DESCRIPTION = ArcamFmjCommandEntityDescription(
+    key="display_info_type",
+    command=DISPLAY_INFO_TYPE,
+    translation_key="display_info_type",
+    entity_category=EntityCategory.CONFIG,
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -151,7 +161,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Arcam FMJ selects from a config entry."""
     coordinators = config_entry.runtime_data.coordinators
-    entities: list[ArcamFmjSelectEntity] = [
+    entities: list[SelectEntity] = [
         ArcamFmjSelectEntity(coordinator, description)
         for coordinator in config_entry.runtime_data.coordinators.values()
         for description in supported_entity_descriptions(coordinator, SELECTS)
@@ -165,6 +175,14 @@ async def async_setup_entry(
         )
         for coordinator in coordinators.values()
         if coordinator.supports_command(ROOM_EQUALIZATION)
+    )
+    entities.extend(
+        ArcamFmjDisplayInfoSelectEntity(
+            coordinator,
+            DISPLAY_INFO_TYPE_DESCRIPTION,
+        )
+        for coordinator in coordinators.values()
+        if coordinator.supports_command(DISPLAY_INFO_TYPE)
     )
     async_add_entities(entities)
 
@@ -282,4 +300,37 @@ class ArcamFmjRoomEqSelectEntity(ArcamFmjSelectEntity):
                 translation_placeholders={"state": option},
             )
         await self.coordinator.state.set(ROOM_EQUALIZATION, option_values[option])
+        self.async_write_ha_state()
+
+
+class ArcamFmjDisplayInfoSelectEntity(ArcamFmjEntity, SelectEntity):
+    """Representation of a source-dependent VFD information select."""
+
+    def _option_values(self) -> dict[str, DisplayInfoTypeValue]:
+        return {
+            value.name.lower(): value
+            for value in display_info_types_for_source(
+                self.coordinator.state.get_source()
+            )
+        }
+
+    @property
+    @override
+    def options(self) -> list[str]:
+        """Return the VFD information choices for the current source."""
+        return list(self._option_values())
+
+    @property
+    @override
+    def current_option(self) -> str | None:
+        """Return the selected VFD information type."""
+        return enum_value(self.coordinator.state.get(DISPLAY_INFO_TYPE))
+
+    @convert_exception
+    @override
+    async def async_select_option(self, option: str) -> None:
+        """Select a VFD information type."""
+        await self.coordinator.state.set(
+            DISPLAY_INFO_TYPE, self._option_values()[option]
+        )
         self.async_write_ha_state()

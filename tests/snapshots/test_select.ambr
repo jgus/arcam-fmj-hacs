@@ -369,6 +369,63 @@
     'state': 'unknown',
   })
 # ---
+# name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_vfd_information-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'processing',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_vfd_information',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'VFD information',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'VFD information',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'display_info_type',
+    'unique_id': '456789abcdef-1-display_info_type',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_vfd_information-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) VFD information',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'processing',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_vfd_information',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_zone_2_dolby_audio_mode-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -550,6 +607,63 @@
     }),
     'context': <ANY>,
     'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_room_equalization',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_zone_2_vfd_information-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'processing',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_vfd_information',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'VFD information',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'VFD information',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'display_info_type',
+    'unique_id': '456789abcdef-2-display_info_type',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[AVR20][select.arcam_fmj_127_0_0_1_zone_2_vfd_information-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Zone 2 VFD information',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'processing',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_vfd_information',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
@@ -993,6 +1107,63 @@
     'state': 'unknown',
   })
 # ---
+# name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_vfd_information-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'processing',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_vfd_information',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'VFD information',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'VFD information',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'display_info_type',
+    'unique_id': '456789abcdef-1-display_info_type',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_vfd_information-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) VFD information',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'processing',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_vfd_information',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_video_film_mode-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -1292,6 +1463,63 @@
     }),
     'context': <ANY>,
     'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_room_equalization',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_zone_2_vfd_information-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'processing',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': <ANY>,
+    'device_class': None,
+    'device_id': <ANY>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_vfd_information',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'VFD information',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'VFD information',
+    'platform': 'arcam_fmj',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'display_info_type',
+    'unique_id': '456789abcdef-2-display_info_type',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_setup[AVR450][select.arcam_fmj_127_0_0_1_zone_2_vfd_information-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Arcam FMJ (127.0.0.1) Zone 2 VFD information',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'processing',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.arcam_fmj_127_0_0_1_zone_2_vfd_information',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

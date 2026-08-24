@@ -146,6 +146,23 @@
                     "off": "Off"
                 }
             },
+            "display_info_type": {
+                "name": "VFD information",
+                "state": {
+                    "album": "Album",
+                    "artist": "Artist",
+                    "audio_type": "Audio type",
+                    "bit_rate": "Bit rate",
+                    "genre": "Genre",
+                    "processing": "Processing mode",
+                    "programme_type": "Programme type",
+                    "radio_text": "Radio text",
+                    "sample_rate": "Sample rate",
+                    "signal_quality": "Signal quality",
+                    "signal_strength": "Signal strength",
+                    "track": "Track"
+                }
+            },
             "dolby_audio": {
                 "name": "Dolby Audio mode",
                 "state": {

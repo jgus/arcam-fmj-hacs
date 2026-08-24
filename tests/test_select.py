@@ -1,16 +1,21 @@
 """Tests for Arcam FMJ select entities."""
 
 from collections.abc import Generator
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from arcam.fmj.codecs import (
     AutoShutdown,
     CompressionMode,
+    DabDisplayInfoType,
+    DisplayInfoType,
     DisplayBrightness,
     DolbyAudioMode,
+    FmDisplayInfoType,
     HdmiOutput,
     ImaxEnhancedMode,
+    NetworkDisplayInfoType,
     RoomEqMode,
+    SourceCodes,
     VideoFilmMode,
     VideoNoiseReduction,
     VideoSelection,
@@ -19,6 +24,7 @@ from arcam.fmj.commands import (
     AUTO_SHUTDOWN_CONTROL,
     COMPRESSION,
     DISPLAY_BRIGHTNESS,
+    DISPLAY_INFO_TYPE,
     DOLBY_AUDIO,
     IMAX_ENHANCED,
     ROOM_EQUALIZATION,
@@ -52,6 +58,7 @@ from pytest_homeassistant_custom_component.common import (
 
 ENTITY_IDS = {
     DISPLAY_BRIGHTNESS: "select.arcam_fmj_127_0_0_1_front_panel_display_brightness",
+    DISPLAY_INFO_TYPE: "select.arcam_fmj_127_0_0_1_vfd_information",
     VIDEO_SELECTION: "select.arcam_fmj_127_0_0_1_legacy_video_selection",
     IMAX_ENHANCED: "select.arcam_fmj_127_0_0_1_imax_enhanced_mode",
     ROOM_EQUALIZATION: "select.arcam_fmj_127_0_0_1_room_equalization",
@@ -66,6 +73,7 @@ ENTITY_IDS = {
 
 AVR450_COMMANDS = {
     DISPLAY_BRIGHTNESS,
+    DISPLAY_INFO_TYPE,
     VIDEO_SELECTION,
     DOLBY_AUDIO,
     COMPRESSION,
@@ -77,6 +85,7 @@ AVR450_COMMANDS = {
 }
 AVR20_COMMANDS = {
     DISPLAY_BRIGHTNESS,
+    DISPLAY_INFO_TYPE,
     IMAX_ENHANCED,
     DOLBY_AUDIO,
     COMPRESSION,
@@ -147,6 +156,104 @@ async def test_read_and_write(
     )
 
     state_1.set.assert_awaited_once_with(command, value)
+
+
+@pytest.mark.parametrize("device_model", ["AVR450"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_display_info_type(
+    hass: HomeAssistant,
+    state_1: State,
+    client: Mock,
+) -> None:
+    """Test source-dependent VFD information choices."""
+    entity_id = ENTITY_IDS[DISPLAY_INFO_TYPE]
+    cases = (
+        (
+            SourceCodes.BD,
+            DisplayInfoType.PROCESSING,
+            "processing",
+            ["processing"],
+        ),
+        (
+            SourceCodes.FM,
+            FmDisplayInfoType.PROGRAMME_TYPE,
+            "programme_type",
+            ["processing", "radio_text", "programme_type", "signal_strength"],
+        ),
+        (
+            SourceCodes.DAB,
+            DabDisplayInfoType.BIT_RATE,
+            "bit_rate",
+            [
+                "processing",
+                "radio_text",
+                "genre",
+                "signal_quality",
+                "bit_rate",
+            ],
+        ),
+        (
+            SourceCodes.NET,
+            NetworkDisplayInfoType.ALBUM,
+            "album",
+            [
+                "processing",
+                "track",
+                "artist",
+                "album",
+                "audio_type",
+                "sample_rate",
+            ],
+        ),
+        (
+            SourceCodes.USB,
+            NetworkDisplayInfoType.SAMPLE_RATE,
+            "sample_rate",
+            [
+                "processing",
+                "track",
+                "artist",
+                "album",
+                "audio_type",
+                "sample_rate",
+            ],
+        ),
+        (
+            SourceCodes.NET_USB,
+            NetworkDisplayInfoType.TRACK,
+            "track",
+            [
+                "processing",
+                "track",
+                "artist",
+                "album",
+                "audio_type",
+                "sample_rate",
+            ],
+        ),
+    )
+
+    for source, value, current_option, options in cases:
+        state_1.get_source.return_value = source
+        state_1.command_values[DISPLAY_INFO_TYPE] = value
+        client.notify_data_updated()
+        await hass.async_block_till_done()
+
+        entity_state = hass.states.get(entity_id)
+        assert entity_state is not None
+        assert entity_state.state == current_option
+        assert entity_state.attributes["options"] == options
+
+        await hass.services.async_call(
+            SELECT_DOMAIN,
+            SERVICE_SELECT_OPTION,
+            {ATTR_ENTITY_ID: entity_id, ATTR_OPTION: current_option},
+            blocking=True,
+        )
+
+    assert state_1.set.await_args_list == [
+        call(DISPLAY_INFO_TYPE, value) for _, value, _, _ in cases
+    ]
 
 
 @pytest.mark.parametrize("device_model", ["AVR20"], indirect=True)
@@ -294,6 +401,7 @@ async def test_zone_support(hass: HomeAssistant) -> None:
     """Test selects are created only in supported zones."""
     entity_ids = {state.entity_id for state in hass.states.async_all(SELECT_DOMAIN)}
     assert "select.arcam_fmj_127_0_0_1_zone_2_dolby_audio_mode" in entity_ids
+    assert "select.arcam_fmj_127_0_0_1_zone_2_vfd_information" in entity_ids
     assert "select.arcam_fmj_127_0_0_1_zone_2_dynamic_range_compression" in entity_ids
     assert "select.arcam_fmj_127_0_0_1_zone_2_room_equalization" in entity_ids
     assert not any(
