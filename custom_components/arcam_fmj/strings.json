@@ -57,6 +57,17 @@
         "name": "Short-circuit fault"
       }
     },
+    "button": {
+      "dab_scan": {
+        "name": "DAB scan"
+      },
+      "fm_scan_down": {
+        "name": "FM scan down"
+      },
+      "fm_scan_up": {
+        "name": "FM scan up"
+      }
+    },
     "number": {
       "balance": {
         "name": "Balance"

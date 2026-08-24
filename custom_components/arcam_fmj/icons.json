@@ -17,6 +17,17 @@
         "default": "mdi:flash-alert"
       }
     },
+    "button": {
+      "dab_scan": {
+        "default": "mdi:radio-tower"
+      },
+      "fm_scan_down": {
+        "default": "mdi:arrow-down-bold-circle-outline"
+      },
+      "fm_scan_up": {
+        "default": "mdi:arrow-up-bold-circle-outline"
+      }
+    },
     "number": {
       "balance": {
         "default": "mdi:scale-balance"
