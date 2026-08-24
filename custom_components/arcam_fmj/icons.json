@@ -97,6 +97,9 @@
       "dolby_audio": {
         "default": "mdi:dolby"
       },
+      "dolby_leveler": {
+        "default": "mdi:dolby"
+      },
       "imax_enhanced": {
         "default": "mdi:movie-open-play"
       },

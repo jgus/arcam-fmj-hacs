@@ -11,6 +11,7 @@ from arcam.fmj.codecs import (
     DisplayInfoTypeValue,
     DisplayBrightness,
     DolbyAudioMode,
+    DolbyLeveler,
     HdmiOutput,
     ImaxEnhancedMode,
     RoomEqMode,
@@ -26,6 +27,7 @@ from arcam.fmj.commands import (
     DISPLAY_BRIGHTNESS,
     DISPLAY_INFO_TYPE,
     DOLBY_AUDIO,
+    DOLBY_LEVELER,
     IMAX_ENHANCED,
     PROCESSOR_MODE_INPUT,
     ROOM_EQUALIZATION,
@@ -171,6 +173,13 @@ PROCESSOR_MODE_INPUT_DESCRIPTION = ArcamFmjCommandEntityDescription(
     entity_category=EntityCategory.CONFIG,
 )
 
+DOLBY_LEVELER_DESCRIPTION = ArcamFmjSelectEntityDescription(
+    key="dolby_leveler",
+    command=DOLBY_LEVELER,
+    translation_key="dolby_leveler",
+    entity_category=EntityCategory.CONFIG,
+    enum_type=DolbyLeveler,
+)
 _PROCESSOR_MODE_INPUT_OPTIONS = {
     "disabled": None,
     **{source.name.lower(): source for source in SA_SOURCE_MAPPING},
@@ -214,6 +223,14 @@ async def async_setup_entry(
         )
         for coordinator in coordinators.values()
         if coordinator.supports_command(PROCESSOR_MODE_INPUT)
+    )
+    entities.extend(
+        ArcamFmjDolbyLevelerSelectEntity(
+            coordinator,
+            DOLBY_LEVELER_DESCRIPTION,
+        )
+        for coordinator in coordinators.values()
+        if coordinator.supports_command(DOLBY_LEVELER)
     )
     async_add_entities(entities)
 
@@ -387,3 +404,20 @@ class ArcamFmjProcessorModeInputSelectEntity(ArcamFmjEntity, SelectEntity):
             PROCESSOR_MODE_INPUT, _PROCESSOR_MODE_INPUT_OPTIONS[option]
         )
         self.async_write_ha_state()
+
+
+class ArcamFmjDolbyLevelerSelectEntity(ArcamFmjSelectEntity):
+    """Representation of a Dolby leveler select with an Off state."""
+
+    def __init__(
+        self,
+        coordinator: ArcamFmjCoordinator,
+        description: ArcamFmjSelectEntityDescription,
+    ) -> None:
+        """Initialize the Dolby leveler select."""
+        super().__init__(coordinator, description)
+        self._option_values = {
+            "off": DolbyLeveler.OFF,
+            **self._option_values,
+        }
+        self._attr_options = list(self._option_values)

@@ -11,6 +11,7 @@ from arcam.fmj.codecs import (
     DisplayInfoType,
     DisplayBrightness,
     DolbyAudioMode,
+    DolbyLeveler,
     FmDisplayInfoType,
     HdmiOutput,
     ImaxEnhancedMode,
@@ -28,6 +29,7 @@ from arcam.fmj.commands import (
     DISPLAY_BRIGHTNESS,
     DISPLAY_INFO_TYPE,
     DOLBY_AUDIO,
+    DOLBY_LEVELER,
     IMAX_ENHANCED,
     PROCESSOR_MODE_INPUT,
     ROOM_EQUALIZATION,
@@ -68,6 +70,7 @@ ENTITY_IDS = {
     PROCESSOR_MODE_INPUT: "select.arcam_fmj_127_0_0_1_processor_mode_input",
     ROOM_EQUALIZATION: "select.arcam_fmj_127_0_0_1_room_equalization",
     DOLBY_AUDIO: "select.arcam_fmj_127_0_0_1_dolby_audio_mode",
+    DOLBY_LEVELER: "select.arcam_fmj_127_0_0_1_dolby_leveler",
     COMPRESSION: "select.arcam_fmj_127_0_0_1_dynamic_range_compression",
     VIDEO_FILM_MODE: "select.arcam_fmj_127_0_0_1_video_film_mode",
     VIDEO_NOISE_REDUCTION: "select.arcam_fmj_127_0_0_1_video_noise_reduction",
@@ -81,6 +84,7 @@ AVR450_COMMANDS = {
     DISPLAY_INFO_TYPE,
     VIDEO_SELECTION,
     DOLBY_AUDIO,
+    DOLBY_LEVELER,
     COMPRESSION,
     VIDEO_FILM_MODE,
     VIDEO_NOISE_REDUCTION,
@@ -93,6 +97,7 @@ AVR20_COMMANDS = {
     DISPLAY_INFO_TYPE,
     IMAX_ENHANCED,
     DOLBY_AUDIO,
+    DOLBY_LEVELER,
     COMPRESSION,
     VIDEO_OUTPUT_SWITCHING,
     ROOM_EQUALIZATION,
@@ -331,6 +336,59 @@ async def test_processor_mode_input(
 
 
 @pytest.mark.parametrize("device_model", ["AVR20"], indirect=True)
+@pytest.mark.usefixtures("player_setup")
+async def test_dolby_leveler(
+    hass: HomeAssistant,
+    state_1: State,
+    client: Mock,
+) -> None:
+    """Test Dolby leveler Off and numeric levels."""
+    entity_id = ENTITY_IDS[DOLBY_LEVELER]
+    state_1.command_values[DOLBY_LEVELER] = DolbyLeveler.OFF
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(entity_id)
+    assert entity_state is not None
+    assert entity_state.state == "off"
+    assert entity_state.attributes["options"] == [
+        "off",
+        "level_0",
+        "level_1",
+        "level_2",
+        "level_3",
+        "level_4",
+        "level_5",
+        "level_6",
+        "level_7",
+        "level_8",
+        "level_9",
+        "level_10",
+    ]
+
+    for option in ("level_7", "off"):
+        await hass.services.async_call(
+            SELECT_DOMAIN,
+            SERVICE_SELECT_OPTION,
+            {ATTR_ENTITY_ID: entity_id, ATTR_OPTION: option},
+            blocking=True,
+        )
+
+    assert state_1.set.await_args_list == [
+        call(DOLBY_LEVELER, DolbyLeveler.LEVEL_7),
+        call(DOLBY_LEVELER, DolbyLeveler.OFF),
+    ]
+
+    state_1.command_values[DOLBY_LEVELER] = DolbyLeveler.LEVEL_10
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    entity_state = hass.states.get(entity_id)
+    assert entity_state is not None
+    assert entity_state.state == "level_10"
+
+
+@pytest.mark.parametrize("device_model", ["AVR20"], indirect=True)
 @pytest.mark.usefixtures("entity_registry_enabled_by_default", "player_setup")
 async def test_room_equalization_names(
     hass: HomeAssistant,
@@ -488,6 +546,7 @@ async def test_zone_support(hass: HomeAssistant) -> None:
     """Test selects are created only in supported zones."""
     entity_ids = {state.entity_id for state in hass.states.async_all(SELECT_DOMAIN)}
     assert "select.arcam_fmj_127_0_0_1_zone_2_dolby_audio_mode" in entity_ids
+    assert "select.arcam_fmj_127_0_0_1_zone_2_dolby_leveler" in entity_ids
     assert "select.arcam_fmj_127_0_0_1_zone_2_vfd_information" in entity_ids
     assert "select.arcam_fmj_127_0_0_1_zone_2_dynamic_range_compression" in entity_ids
     assert "select.arcam_fmj_127_0_0_1_zone_2_room_equalization" in entity_ids

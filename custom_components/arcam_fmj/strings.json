@@ -184,6 +184,23 @@
           "off": "Off"
         }
       },
+      "dolby_leveler": {
+        "name": "Dolby leveler",
+        "state": {
+          "level_0": "0",
+          "level_1": "1",
+          "level_10": "10",
+          "level_2": "2",
+          "level_3": "3",
+          "level_4": "4",
+          "level_5": "5",
+          "level_6": "6",
+          "level_7": "7",
+          "level_8": "8",
+          "level_9": "9",
+          "off": "Off"
+        }
+      },
       "imax_enhanced": {
         "name": "IMAX Enhanced mode",
         "state": {
