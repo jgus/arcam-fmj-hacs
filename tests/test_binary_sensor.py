@@ -3,7 +3,13 @@
 from collections.abc import Generator
 from unittest.mock import Mock, patch
 
-from arcam.fmj.commands import INCOMING_VIDEO_PARAMETERS
+from arcam.fmj.commands import (
+    DC_OFFSET,
+    HEADPHONES,
+    INPUT_DETECT,
+    INCOMING_VIDEO_PARAMETERS,
+    SHORT_CIRCUIT_STATUS,
+)
 from arcam.fmj.state import State
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -88,3 +94,49 @@ async def test_binary_sensor_not_interlaced(
     )
     assert state is not None
     assert state.state == STATE_OFF
+
+
+@pytest.mark.parametrize("device_model", ["SA30"], indirect=True)
+@pytest.mark.usefixtures("entity_registry_enabled_by_default", "player_setup")
+async def test_amplifier_binary_sensors(
+    hass: HomeAssistant,
+    state_1: State,
+    client: Mock,
+) -> None:
+    """Test amplifier status and fault binary sensors."""
+    state_1.command_values.update(
+        {
+            HEADPHONES: True,
+            DC_OFFSET: True,
+            SHORT_CIRCUIT_STATUS: False,
+            INPUT_DETECT: True,
+        }
+    )
+
+    client.notify_data_updated()
+    await hass.async_block_till_done()
+
+    expected = {
+        "headphones_connected": STATE_ON,
+        "dc_offset_fault": STATE_ON,
+        "short_circuit_fault": STATE_OFF,
+        "active_input_detected": STATE_ON,
+    }
+    for key, value in expected.items():
+        state = hass.states.get(f"binary_sensor.arcam_fmj_127_0_0_1_{key}")
+        assert state is not None
+        assert state.state == value
+
+    assert (
+        hass.states.get("binary_sensor.arcam_fmj_127_0_0_1_zone_2_headphones") is None
+    )
+
+
+@pytest.mark.usefixtures("player_setup")
+async def test_binary_sensor_model_support(hass: HomeAssistant) -> None:
+    """Test binary sensors are created only for supported models."""
+    assert (
+        hass.states.get("binary_sensor.arcam_fmj_127_0_0_1_headphones_connected")
+        is not None
+    )
+    assert hass.states.get("binary_sensor.arcam_fmj_127_0_0_1_dc_offset_fault") is None

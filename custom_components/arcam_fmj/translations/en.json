@@ -41,8 +41,20 @@
     },
     "entity": {
         "binary_sensor": {
+            "dc_offset": {
+                "name": "DC offset fault"
+            },
+            "headphones": {
+                "name": "Headphones connected"
+            },
+            "input_detect": {
+                "name": "Active input detected"
+            },
             "incoming_video_interlaced": {
                 "name": "Incoming video interlaced"
+            },
+            "short_circuit_status": {
+                "name": "Short-circuit fault"
             }
         },
         "sensor": {

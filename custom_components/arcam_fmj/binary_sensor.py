@@ -4,10 +4,17 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import override
 
-from arcam.fmj.commands import INCOMING_VIDEO_PARAMETERS
+from arcam.fmj.commands import (
+    DC_OFFSET,
+    HEADPHONES,
+    INPUT_DETECT,
+    INCOMING_VIDEO_PARAMETERS,
+    SHORT_CIRCUIT_STATUS,
+)
 from arcam.fmj.state import State
 
 from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -36,6 +43,36 @@ class ArcamFmjBinarySensorEntityDescription(
 
 
 BINARY_SENSORS: tuple[ArcamFmjBinarySensorEntityDescription, ...] = (
+    ArcamFmjBinarySensorEntityDescription(
+        key="headphones",
+        command=HEADPHONES,
+        translation_key="headphones",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda state: state.get(HEADPHONES),
+    ),
+    ArcamFmjBinarySensorEntityDescription(
+        key="dc_offset",
+        command=DC_OFFSET,
+        translation_key="dc_offset",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda state: state.get(DC_OFFSET),
+    ),
+    ArcamFmjBinarySensorEntityDescription(
+        key="short_circuit_status",
+        command=SHORT_CIRCUIT_STATUS,
+        translation_key="short_circuit_status",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda state: state.get(SHORT_CIRCUIT_STATUS),
+    ),
+    ArcamFmjBinarySensorEntityDescription(
+        key="input_detect",
+        command=INPUT_DETECT,
+        translation_key="input_detect",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda state: state.get(INPUT_DETECT),
+    ),
     ArcamFmjBinarySensorEntityDescription(
         key="incoming_video_interlaced",
         command=INCOMING_VIDEO_PARAMETERS,

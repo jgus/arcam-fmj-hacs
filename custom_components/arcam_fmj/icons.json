@@ -1,8 +1,20 @@
 {
   "entity": {
     "binary_sensor": {
+      "dc_offset": {
+        "default": "mdi:current-dc"
+      },
+      "headphones": {
+        "default": "mdi:headphones"
+      },
+      "input_detect": {
+        "default": "mdi:audio-input-rca"
+      },
       "incoming_video_interlaced": {
         "default": "mdi:reorder-horizontal"
+      },
+      "short_circuit_status": {
+        "default": "mdi:flash-alert"
       }
     },
     "sensor": {
