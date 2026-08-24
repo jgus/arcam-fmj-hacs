@@ -17,6 +17,56 @@
         "default": "mdi:flash-alert"
       }
     },
+    "number": {
+      "balance": {
+        "default": "mdi:scale-balance"
+      },
+      "bass_equalization": {
+        "default": "mdi:music-clef-bass"
+      },
+      "dolby_pliix_centre_width": {
+        "default": "mdi:surround-sound"
+      },
+      "dolby_volume_calibration_offset": {
+        "default": "mdi:dolby"
+      },
+      "lipsync_delay": {
+        "default": "mdi:timer-sync-outline"
+      },
+      "max_streaming_volume": {
+        "default": "mdi:cast-audio"
+      },
+      "max_turn_on_volume": {
+        "default": "mdi:volume-plus"
+      },
+      "max_volume": {
+        "default": "mdi:volume-high"
+      },
+      "processor_mode_volume": {
+        "default": "mdi:audio-input-rca"
+      },
+      "sub_stereo_trim": {
+        "default": "mdi:speaker-multiple"
+      },
+      "subwoofer_trim": {
+        "default": "mdi:speaker"
+      },
+      "treble_equalization": {
+        "default": "mdi:music-clef-treble"
+      },
+      "video_brightness": {
+        "default": "mdi:brightness-6"
+      },
+      "video_colour": {
+        "default": "mdi:palette"
+      },
+      "video_contrast": {
+        "default": "mdi:contrast-box"
+      },
+      "video_edge_enhancement": {
+        "default": "mdi:image-filter-center-focus-strong"
+      }
+    },
     "select": {
       "auto_shutdown_control": {
         "default": "mdi:timer-off-outline"

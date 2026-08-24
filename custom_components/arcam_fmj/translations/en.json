@@ -57,6 +57,56 @@
                 "name": "Short-circuit fault"
             }
         },
+        "number": {
+            "balance": {
+                "name": "Balance"
+            },
+            "bass_equalization": {
+                "name": "Bass"
+            },
+            "dolby_pliix_centre_width": {
+                "name": "Dolby PLIIx center width"
+            },
+            "dolby_volume_calibration_offset": {
+                "name": "Dolby Volume calibration offset"
+            },
+            "lipsync_delay": {
+                "name": "Lip-sync delay"
+            },
+            "max_streaming_volume": {
+                "name": "Maximum streaming volume"
+            },
+            "max_turn_on_volume": {
+                "name": "Maximum turn-on volume"
+            },
+            "max_volume": {
+                "name": "Maximum volume"
+            },
+            "processor_mode_volume": {
+                "name": "Processor-mode volume"
+            },
+            "sub_stereo_trim": {
+                "name": "Sub-stereo trim"
+            },
+            "subwoofer_trim": {
+                "name": "Subwoofer trim"
+            },
+            "treble_equalization": {
+                "name": "Treble"
+            },
+            "video_brightness": {
+                "name": "Legacy video brightness"
+            },
+            "video_colour": {
+                "name": "Legacy video colour"
+            },
+            "video_contrast": {
+                "name": "Legacy video contrast"
+            },
+            "video_edge_enhancement": {
+                "name": "Legacy video edge enhancement"
+            }
+        },
         "select": {
             "auto_shutdown_control": {
                 "name": "Auto-shutdown interval",
