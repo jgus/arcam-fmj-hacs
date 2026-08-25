@@ -1,3 +1,3 @@
 pytest-homeassistant-custom-component==0.13.357
-arcam-fmj @ git+https://github.com/jgus/arcam_fmj.git@06581c759079664dbc7d1bcff380785386506942
+arcam-fmj @ git+https://github.com/jgus/arcam_fmj.git@e3a6d432a2411603d20307d189d8c6ebf3f12922
 defusedxml
