@@ -1,6 +1,6 @@
 # Arcam FMJ Receivers
 
-[![Test](https://github.com/jgus/arcam-fmj-hacs/actions/workflows/test.yml/badge.svg)](https://github.com/jgus/arcam-fmj-hacs/actions/workflows/test.yml)
+[![Test](https://github.com/jgus-org/arcam-fmj-hacs/actions/workflows/test.yml/badge.svg)](https://github.com/jgus-org/arcam-fmj-hacs/actions/workflows/test.yml)
 
 A Home Assistant integration for Arcam FMJ receivers — a drop-in replacement for the built-in [arcam_fmj](https://www.home-assistant.io/integrations/arcam_fmj) integration with substantially richer control, diagnostics, and receiver configuration.
 
@@ -22,7 +22,7 @@ Entity availability is model-dependent: a PA720 will not show AVR-only controls,
 
 ## Supported receivers
 
-The integration covers the receivers in the [`arcam-fmj`](https://github.com/jgus/arcam_fmj) library's model table:
+The integration covers the receivers in the [`arcam-fmj`](https://github.com/jgus-org/arcam_fmj) library's model table:
 
 - **AVR series** — AV860, AVR850, AVR550, AVR390, SR250, RV-6, RV-9, MC-10, AVR380, AVR450, AVR750
 - **AVR+ (HDA) series** — AVR5, AVR10, AVR20, AVR30, AV40, AVR11, AVR21, AVR31, AV41
@@ -59,7 +59,7 @@ Releases follow semantic versioning and are tagged on this repo; see [CHANGELOG.
 
 ## Reporting issues
 
-Bug reports and feature requests: [open an issue](https://github.com/jgus/arcam-fmj-hacs/issues). Include your receiver model and the Home Assistant log output for the `arcam` logger.
+Bug reports and feature requests: [open an issue](https://github.com/jgus-org/arcam-fmj-hacs/issues). Include your receiver model and the Home Assistant log output for the `arcam` logger.
 
 ## License
 
@@ -71,7 +71,7 @@ The feature work here is also being contributed to the built-in `arcam_fmj` inte
 
 `custom_components/arcam_fmj` is copied verbatim from `homeassistant/components/arcam_fmj` at core commit `1db381611fbe5f80cf8210d5ab36b73ef9ddeaaa` (2026-08-23), with only these deviations:
 
-- `manifest.json` gains a `version` key (required by HACS), `@jgus` as a codeowner, a pin to the current `jgus/arcam_fmj` `working` tip, and `documentation` pointing at this repo
+- `manifest.json` gains a `version` key (required by HACS), `@jgus` as a codeowner, a pin to the current `jgus-org/arcam_fmj` `working` tip, and `documentation` pointing at this repo
 - the integration and tests use the library's 2.x command API
 - `tests/` mirrors `tests/components/arcam_fmj` from core, ported to run standalone via [pytest-homeassistant-custom-component](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component)
 
