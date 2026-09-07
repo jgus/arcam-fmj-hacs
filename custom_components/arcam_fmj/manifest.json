@@ -13,7 +13,7 @@
     "arcam"
   ],
   "requirements": [
-    "arcam-fmj @ git+https://github.com/jgus/arcam_fmj.git@8e5cd3d67d9b04f96bd7c6d12e232a0e98886698"
+    "arcam-fmj @ git+https://github.com/jgus-org/arcam_fmj.git@8e5cd3d67d9b04f96bd7c6d12e232a0e98886698"
   ],
   "ssdp": [
     {
